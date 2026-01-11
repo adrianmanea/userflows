@@ -3,11 +3,25 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Loader2, Play } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+interface LoginDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
@@ -43,7 +57,7 @@ export default function LoginPage() {
         });
         if (error) throw error;
         router.refresh();
-        router.push("/");
+        onClose();
       }
     } catch (e: any) {
       setMessage({ text: e.message, type: "error" });
@@ -53,58 +67,50 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden font-sans">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-3xl opacity-50" />
-        <div className="absolute top-[30%] -right-[10%] w-[40%] h-[40%] bg-purple-500/5 rounded-full blur-3xl opacity-50" />
-      </div>
-
-      <div className="w-full max-w-sm relative z-10">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to Dashboard
-        </Link>
-
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl w-full max-w-sm relative z-10 backdrop-blur-xl">
-          <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-primary text-primary-foreground mb-4">
-            <div className="text-sm font-bold">21</div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <div className="flex items-center justify-center mb-4">
+            <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-primary text-primary-foreground">
+              <div className="text-sm font-bold">UF</div>
+            </div>
           </div>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">
+          <DialogTitle className="text-center text-xl">
             {isSignUp ? "Create an account" : "Welcome back"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-2">
+          </DialogTitle>
+          <DialogDescription className="text-center">
             {isSignUp
               ? "Enter your email to create your account"
               : "Enter your email to sign in to your account"}
-          </p>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={handleAuth} className="space-y-4 mt-4">
           <div className="space-y-4">
-            <div>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
                 placeholder="name@example.com"
+                className="bg-muted/50"
               />
             </div>
 
-            <div>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
                 type="password"
                 required
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
                 placeholder="••••••••"
+                className="bg-muted/50"
               />
             </div>
           </div>
@@ -114,7 +120,7 @@ export default function LoginPage() {
               className={cn(
                 "p-3 rounded-lg text-xs leading-relaxed",
                 message.type === "error"
-                  ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                  ? "bg-destructive/10 text-destructive border border-destructive/20"
                   : "bg-green-500/10 text-green-500 border border-green-500/20"
               )}
             >
@@ -122,11 +128,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-10 flex items-center justify-center bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isSignUp ? (
@@ -134,24 +136,25 @@ export default function LoginPage() {
             ) : (
               "Sign In"
             )}
-          </button>
+          </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <p className="text-xs text-muted-foreground">
             {isSignUp ? "Already have an account? " : "Don't have an account? "}
             <button
+              type="button"
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setMessage(null);
               }}
-              className="text-foreground font-medium hover:text-foreground/80 underline-offset-4 hover:underline transition-colors"
+              className="text-foreground font-medium hover:text-foreground/80 underline-offset-4 hover:underline transition-colors focus:outline-none"
             >
               {isSignUp ? "Sign In" : "Sign Up"}
             </button>
           </p>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

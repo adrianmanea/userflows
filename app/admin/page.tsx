@@ -5,14 +5,21 @@ import Editor from "@monaco-editor/react";
 import { createClient } from "@/utils/supabase/client";
 import { Sidebar } from "@/components/ui/sidebar";
 import { Header } from "@/components/ui/header";
+import { FilterSelector } from "@/components/admin/filter-selector";
 import { Loader2, Save } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export default function AdminClientPage() {
   const supabase = createClient();
   const [name, setName] = useState("");
-  const [tags, setTags] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [originalApp, setOriginalApp] = useState("");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [publishMode, setPublishMode] = useState<"builder" | "upload" | "url">(
+    "builder"
+  );
+
+  // Builder Mode State
   const [code, setCode] = useState(`export default function Component() {
   return (
     <div className="p-4 bg-white text-black">
@@ -20,6 +27,13 @@ export default function AdminClientPage() {
     </div>
   )
 }`);
+
+  // Upload Mode State
+  const [file, setFile] = useState<File | null>(null);
+
+  // URL Mode State
+  const [externalUrl, setExternalUrl] = useState("");
+
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -36,29 +50,125 @@ export default function AdminClientPage() {
     setMessage(null);
 
     try {
-      const tagArray = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
+      let previewUrl = null;
+      let thumbnailUrl = null;
+      const componentId = crypto.randomUUID(); // Generate ID client-side for file path consistency
 
-      const { error } = await supabase.from("components").insert({
-        name,
-        code_string: code,
-        original_app: originalApp || null,
-        tags: tagArray,
-      });
+      // 0. Handle Thumbnail Upload
+      if (thumbnailFile) {
+        const fileExt = thumbnailFile.name.split(".").pop();
+        const fileName = `thumbnails/${componentId}.${fileExt}`;
+
+        const { error: thumbError } = await supabase.storage
+          .from("component-previews")
+          .upload(fileName, thumbnailFile, { upsert: true });
+
+        if (thumbError) {
+          console.error("Thumbnail upload failed:", thumbError);
+          // don't throw, just log
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from("component-previews")
+            .getPublicUrl(fileName);
+          thumbnailUrl = publicUrlData.publicUrl;
+        }
+      }
+
+      // 1. Handle Artifact Generation/Upload based on Mode
+      if (publishMode === "builder") {
+        const { buildComponentHtml } = await import(
+          "@/utils/component-builder"
+        );
+        const htmlContent = buildComponentHtml(code);
+        const blob = new Blob([htmlContent], { type: "text/html" });
+        const fileName = `${componentId}.html`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("component-previews")
+          .upload(fileName, blob, { upsert: true });
+
+        if (uploadError)
+          throw new Error("Upload failed: " + uploadError.message);
+
+        const { data: publicUrlData } = supabase.storage
+          .from("component-previews")
+          .getPublicUrl(fileName);
+
+        previewUrl = publicUrlData.publicUrl;
+      } else if (publishMode === "upload") {
+        if (!file) throw new Error("No file selected");
+
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${componentId}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("component-previews")
+          .upload(fileName, file, { upsert: true });
+
+        if (uploadError)
+          throw new Error("Upload failed: " + uploadError.message);
+
+        const { data: publicUrlData } = supabase.storage
+          .from("component-previews")
+          .getPublicUrl(fileName);
+
+        previewUrl = publicUrlData.publicUrl;
+      } else if (publishMode === "url") {
+        if (!externalUrl) throw new Error("No URL provided");
+        previewUrl = externalUrl;
+      }
+
+      // 2. Save Metadata to DB
+      const { data: componentData, error } = await supabase
+        .from("components")
+        .insert({
+          name,
+          code_string: publishMode === "builder" ? code : null, // Only save code if using builder
+          original_app: originalApp || null,
+          tags: [], // Deprecated
+          preview_url: previewUrl,
+          thumbnail_url: thumbnailUrl,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setMessage({ type: "success", text: "Component saved successfully!" });
+      // 3. Save Filters
+      if (selectedFilters.length > 0 && componentData) {
+        const filterInserts = selectedFilters.map((filterId) => ({
+          component_id: componentData.id,
+          filter_id: filterId,
+        }));
+
+        const { error: filterError } = await supabase
+          .from("component_filters")
+          .insert(filterInserts);
+
+        if (filterError) {
+          console.error("Error saving filters:", filterError);
+          setMessage({
+            type: "error",
+            text: "Component saved but filters failed: " + filterError.message,
+          });
+          return;
+        }
+      }
+
+      setMessage({
+        type: "success",
+        text: "Component published successfully!",
+      });
+      // Reset form (optional, or keep values for re-publish)
       setName("");
-      setTags("");
+      setSelectedFilters([]);
       setOriginalApp("");
+      setFile(null);
     } catch (e: any) {
       console.error(e);
       setMessage({
         type: "error",
-        text: "Error saving component: " + e.message,
+        text: "Error publishing: " + e.message,
       });
     } finally {
       setIsSaving(false);
@@ -66,68 +176,116 @@ export default function AdminClientPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-start bg-zinc-950 text-zinc-100 font-sans antialiased">
-      <Sidebar className="sticky top-0 h-screen" />
-      <div className="flex flex-1 flex-col min-w-0">
-        <Header />
-        <main className="flex-1 p-6 space-y-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">
-              Add Component
-            </h1>
-          </div>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+          Publish Component
+        </h1>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Form Section */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-[#292929]/40 border border-zinc-800 rounded-2xl p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-400">
-                      Component Name
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full h-10 px-3 bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all"
-                      placeholder="e.g. Login Card"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-400">
-                      Original App{" "}
-                      <span className="text-zinc-600">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={originalApp}
-                      onChange={(e) => setOriginalApp(e.target.value)}
-                      className="w-full h-10 px-3 bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all"
-                      placeholder="e.g. Uber"
-                    />
-                  </div>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Form Section */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-card/40 border border-border rounded-2xl p-6 space-y-6">
+            {/* Metadata Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Component Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
+                  placeholder="e.g. Login Card"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Original App{" "}
+                  <span className="text-muted-foreground/70">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={originalApp}
+                  onChange={(e) => setOriginalApp(e.target.value)}
+                  className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
+                  placeholder="e.g. Uber"
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-400">
-                    Tags{" "}
-                    <span className="text-zinc-600">(comma separated)</span>
-                  </label>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Thumbnail{" "}
+                  <span className="text-muted-foreground/70">
+                    (Image or MP4)
+                  </span>
+                </label>
+                <div className="flex items-center gap-4">
                   <input
-                    type="text"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    className="w-full h-10 px-3 bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all"
-                    placeholder="e.g. auth, form, card"
+                    type="file"
+                    accept="image/*,video/mp4"
+                    onChange={(e) =>
+                      setThumbnailFile(e.target.files?.[0] || null)
+                    }
+                    className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80"
                   />
+                  {thumbnailFile && (
+                    <span className="text-xs text-green-500">
+                      Selected: {thumbnailFile.name}
+                    </span>
+                  )}
                 </div>
+              </div>
+            </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-400">
-                    Code
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                Filters / Tags
+              </label>
+              <FilterSelector
+                selectedFilters={selectedFilters}
+                onChange={setSelectedFilters}
+              />
+            </div>
+
+            {/* Mode Selection */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <label className="text-sm font-medium text-muted-foreground block">
+                Publishing Method
+              </label>
+              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border w-fit">
+                {(["builder", "upload", "url"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setPublishMode(mode)}
+                    className={cn(
+                      "px-4 py-2 text-xs font-medium rounded-md transition-all",
+                      publishMode === mode
+                        ? "bg-muted text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {mode === "builder" && "Code Builder"}
+                    {mode === "upload" && "Upload File"}
+                    {mode === "url" && "External URL"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic Input Area */}
+            <div className="space-y-2">
+              {publishMode === "builder" && (
+                <>
+                  <label className="text-sm font-medium text-muted-foreground flex justify-between">
+                    <span>React Code</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      Will be auto-built to HTML
+                    </span>
                   </label>
-                  <div className="h-[400px] border border-zinc-800 rounded-lg overflow-hidden bg-[#1e1e1e]">
+                  <div className="h-[400px] border border-border rounded-lg overflow-hidden bg-[#1e1e1e]">
                     <Editor
                       height="100%"
                       defaultLanguage="javascript"
@@ -143,74 +301,130 @@ export default function AdminClientPage() {
                       }}
                     />
                   </div>
-                </div>
+                </>
+              )}
 
-                {message && (
-                  <div
-                    className={cn(
-                      "p-3 rounded-lg text-xs leading-relaxed",
-                      message.type === "error"
-                        ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                        : "bg-green-500/10 text-green-500 border border-green-500/20"
-                    )}
+              {publishMode === "upload" && (
+                <div className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center text-center hover:border-border transition-colors bg-muted/20">
+                  <input
+                    type="file"
+                    accept=".html"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer space-y-3"
                   >
-                    {message.text}
-                  </div>
-                )}
+                    <div className="h-12 w-12 bg-secondary rounded-full flex items-center justify-center mx-auto text-secondary-foreground">
+                      <Save className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {file ? file.name : "Click to select HTML file"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Max 5MB. Must be a standalone HTML file.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
 
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="w-full h-10 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-950 rounded-lg text-sm font-medium hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  {isSaving ? "Saving..." : "Save Component"}
-                </button>
-              </div>
+              {publishMode === "url" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    External Preview URL
+                  </label>
+                  <input
+                    type="url"
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                    className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all font-mono"
+                    placeholder="https://my-preview-app.com/login-v1"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Provide a direct link to a hosted preview.
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Sidebar / Instructions */}
-            <div className="space-y-6">
-              <div className="bg-[#292929]/40 border border-zinc-800 rounded-2xl p-6">
-                <h2 className="font-semibold text-zinc-200 mb-4 text-sm">
-                  Instructions
-                </h2>
-                <ul className="space-y-3 text-xs text-zinc-400 leading-relaxed">
+            {message && (
+              <div
+                className={cn(
+                  "p-3 rounded-lg text-xs leading-relaxed",
+                  message.type === "error"
+                    ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                    : "bg-green-500/10 text-green-500 border border-green-500/20"
+                )}
+              >
+                {message.text}
+              </div>
+            )}
+
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {isSaving ? "Publishing..." : "Publish Component"}
+            </button>
+          </div>
+        </div>
+
+        {/* Sidebar / Instructions */}
+        <div className="space-y-6">
+          <div className="bg-card/40 border border-border rounded-2xl p-6">
+            <h2 className="font-semibold text-foreground mb-4 text-sm">
+              Instructions
+            </h2>
+            <ul className="space-y-3 text-xs text-muted-foreground leading-relaxed">
+              {publishMode === "builder" && (
+                <>
                   <li className="flex gap-2">
-                    <span className="bg-zinc-800 rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-zinc-300 flex-shrink-0 mt-0.5">
+                    <span className="bg-muted rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
                       1
                     </span>
-                    Write your component as a default export function or named{" "}
-                    <code>Component</code>.
+                    Write your code as a standard React component (export
+                    default).
                   </li>
                   <li className="flex gap-2">
-                    <span className="bg-zinc-800 rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-zinc-300 flex-shrink-0 mt-0.5">
+                    <span className="bg-muted rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
                       2
                     </span>
-                    Tailwind CSS is available for styling.
+                    Imports are stripped. Use global <code>React</code>,{" "}
+                    <code>LucideIcons</code>, etc.
                   </li>
-                  <li className="flex gap-2">
-                    <span className="bg-zinc-800 rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-zinc-300 flex-shrink-0 mt-0.5">
-                      3
-                    </span>
-                    Lucide React icons are not yet available in the sandbox.
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="bg-zinc-800 rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-zinc-300 flex-shrink-0 mt-0.5">
-                      4
-                    </span>
-                    Imports will be stripped, so use standard HTML elements or
-                    ensure dependencies are in global scope.
-                  </li>
-                </ul>
-              </div>
-            </div>
+                </>
+              )}
+              {publishMode === "upload" && (
+                <li className="flex gap-2">
+                  <span className="bg-muted rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
+                    1
+                  </span>
+                  Upload a single <code>.html</code> file with all
+                  styles/scripts inlined or CDN linked.
+                </li>
+              )}
+              {publishMode === "url" && (
+                <li className="flex gap-2">
+                  <span className="bg-muted rounded-full h-4 w-4 flex items-center justify-center text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
+                    1
+                  </span>
+                  Ensure the URL is publicly accessible and supports iframe
+                  embedding (X-Frame-Options).
+                </li>
+              )}
+            </ul>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

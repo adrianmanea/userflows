@@ -1,90 +1,288 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useMemo } from "react";
+import { createClient } from "@/utils/supabase/client";
 import {
   Home,
   Layout,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Map as MapIcon,
-  Sun,
+  ChevronRight,
+  Smartphone,
+  Component,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { LoginDialog } from "@/components/auth/login-dialog";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
+type FilterDefinition = {
+  id: string;
+  section: "category" | "screen" | "ui_element" | "flow";
+  group_name: string | null;
+  name: string;
+  slug: string;
+};
+
+// Icon Mapping Removed
+
 export function Sidebar({ className, ...props }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+
+  const [filters, setFilters] = useState<FilterDefinition[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    category: true,
+    screen: true,
+    ui_element: false,
+    flow: false,
+  });
+
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
+  const activeFilterIds = useMemo(() => {
+    const p = searchParams.get("filters");
+    return p ? p.split(",") : [];
+  }, [searchParams]);
+
+  useEffect(() => {
+    async function fetchData() {
+      const { data: filtersData } = await supabase
+        .from("filter_definitions")
+        .select("*")
+        .order("name", { ascending: true });
+
+      const { data: relations } = await supabase
+        .from("component_filters")
+        .select("filter_id");
+
+      if (filtersData) setFilters(filtersData);
+
+      if (relations) {
+        const newCounts: Record<string, number> = {};
+        relations.forEach((r) => {
+          newCounts[r.filter_id] = (newCounts[r.filter_id] || 0) + 1;
+        });
+        setCounts(newCounts);
+      }
+
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  const toggleFilter = (id: string) => {
+    const newFilters = activeFilterIds.includes(id)
+      ? activeFilterIds.filter((fid) => fid !== id)
+      : [...activeFilterIds, id];
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (newFilters.length > 0) {
+      params.set("filters", newFilters.join(","));
+    } else {
+      params.delete("filters");
+    }
+    router.push(`/?${params.toString()}`);
+  };
+
+  const toggleSection = (section: string) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const sections = ["category", "screen", "ui_element", "flow"] as const;
+
+  const sectionConfig: Record<
+    string,
+    { label: string; icon: React.ElementType }
+  > = {
+    category: { label: "Categories", icon: Layout },
+    screen: { label: "Screens", icon: Smartphone },
+    ui_element: { label: "UI Elements", icon: Component },
+    flow: { label: "Flows", icon: GitBranch },
+  };
+
+  const isDev = process.env.NODE_ENV === "development";
 
   return (
     <aside
       className={cn(
-        "hidden w-[240px] flex-col border-r border-zinc-800 bg-zinc-950 text-zinc-400 lg:flex",
+        "hidden w-[260px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex shrink-0 h-screen overflow-y-auto scrollbar-none",
         className
       )}
       {...props}
     >
-      <div className="flex h-12 items-center px-4 py-2">
-        <button className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-zinc-900 transition-colors text-zinc-100">
-          <div className="flex h-5 w-6 items-center justify-center rounded-sm bg-zinc-100 text-zinc-950 font-bold text-[10px]">
-            USR
+      <div className="flex h-14 items-center px-4 py-3">
+        <Link href="/">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold text-[10px]">
+            UF
           </div>
-          <span className="text-sm font-medium">Userflows</span>
-        </button>
+        </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2">
-        <div className="px-3 py-2">
-          <div className="space-y-0.5">
-            <NavItem
-              href="/"
-              icon={Home}
-              label="Main"
-              active={pathname === "/"}
-            />
-          </div>
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-none">
+        {/* Main Nav */}
+        <div className="space-y-0.5">
+          <NavItem
+            href="/"
+            icon={Home}
+            label="Home"
+            active={pathname === "/" && activeFilterIds.length === 0}
+          />
         </div>
 
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-2 text-xs font-medium text-zinc-500">
-            Components
-          </h2>
-          <div className="space-y-0.5">
-            <NavItem
-              href="/dashboard/components"
-              icon={Layout}
-              label="Components"
-              active={pathname?.startsWith("/dashboard/components")}
-            />
-            <div className="ml-4 space-y-0.5 border-l border-zinc-800 pl-4 mt-1">
-              <NavItem
-                href="/dashboard/user-settings"
-                label="User Settings"
-                active={pathname === "/dashboard/user-settings"}
-                compact
-              />
-              <NavItem
-                href="/dashboard/onboarding"
-                label="Onboarding"
-                active={pathname === "/dashboard/onboarding"}
-                compact
-              />
-            </div>
+        {/* Filters */}
+        {loading ? (
+          <div className="space-y-4 px-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                <div className="pl-4 space-y-2">
+                  {[1, 2, 3].map((j) => (
+                    <div
+                      key={j}
+                      className="h-3 w-32 bg-muted/50 rounded animate-pulse"
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          sections.map((section) => {
+            const sectionFilters = filters.filter((f) => f.section === section);
+            if (sectionFilters.length === 0) return null;
+
+            const grouped: Record<string, FilterDefinition[]> = {};
+            let hasItems = false;
+
+            sectionFilters.forEach((f) => {
+              const count = counts[f.id] || 0;
+              if (count > 0 || isDev) {
+                const g = f.group_name || "General";
+                if (!grouped[g]) grouped[g] = [];
+                grouped[g].push(f);
+                hasItems = true;
+              }
+            });
+
+            if (!hasItems) return null;
+
+            const groups = Object.keys(grouped).sort();
+            const isOpen = openSections[section];
+            const { label, icon: SectionIcon } = sectionConfig[section];
+
+            return (
+              <div key={section} className="space-y-1">
+                <Button
+                  variant="ghost"
+                  onClick={() => toggleSection(section)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-2 py-1 h-auto hover:bg-sidebar-accent hover:text-foreground cursor-pointer",
+                    isOpen ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <SectionIcon className="h-4 w-4 stroke-[1.5]" />
+                    <span className="capitalize text-sm font-medium">
+                      {label}
+                    </span>
+                  </div>
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200 text-muted-foreground group-hover:text-foreground",
+                      isOpen && "rotate-90"
+                    )}
+                  />
+                </Button>
+
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-1 pb-2">
+                        {groups.map((groupName) => (
+                          <div key={groupName}>
+                            {groupName !== "General" &&
+                              section !== "category" && (
+                                <div className="text-[10px] font-medium text-muted-foreground px-3 py-1 uppercase mt-1 mb-0.5 ml-2 cursor-pointer">
+                                  {groupName}
+                                </div>
+                              )}
+                            <div className="space-y-0.5 border-l border-border/50 ml-4 pl-2">
+                              {grouped[groupName].map((filter) => {
+                                const count = counts[filter.id] || 0;
+                                const isActive = activeFilterIds.includes(
+                                  filter.id
+                                );
+
+                                return (
+                                  <Button
+                                    key={filter.id}
+                                    variant="ghost"
+                                    onClick={() => toggleFilter(filter.id)}
+                                    className={cn(
+                                      "w-full flex items-center justify-between px-2 py-1 h-auto font-normal hover:bg-sidebar-accent hover:text-foreground cursor-pointer",
+                                      isActive
+                                        ? "text-sidebar-primary font-medium bg-sidebar-accent"
+                                        : "text-muted-foreground"
+                                    )}
+                                  >
+                                    <span className="truncate text-[13px]">
+                                      {filter.name}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "text-[10px] tabular-nums transition-colors",
+                                        isActive
+                                          ? "text-primary"
+                                          : "text-muted-foreground group-hover:text-foreground"
+                                      )}
+                                    >
+                                      {count}
+                                    </span>
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })
+        )}
       </div>
 
-      <div className="border-t border-zinc-900 p-4">
+      <div className="border-t border-sidebar-border p-4 m-4">
+        {/* User / Settings Footer (Optional) */}
         <div className="flex items-center justify-between">
-          <button className="flex items-center gap-2 rounded-full bg-zinc-900/50 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors">
-            Log in
-          </button>
-          <button className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors">
-            <Sun className="h-4 w-4" />
-          </button>
+          <Button
+            variant="ghost"
+            onClick={() => setIsLoginOpen(true)}
+            className="text-xs text-muted-foreground hover:text-foreground px-0 h-auto hover:bg-transparent cursor-pointer"
+          >
+            Sign In / Sign Up
+          </Button>
         </div>
       </div>
+
+      <LoginDialog isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </aside>
   );
 }
@@ -94,52 +292,24 @@ interface NavItemProps {
   icon?: React.ElementType;
   label: string;
   active?: boolean;
-  count?: number;
-  badge?: string;
-  badgeColor?: "blue" | "green";
-  compact?: boolean;
 }
 
-function NavItem({
-  href,
-  icon: Icon,
-  label,
-  active,
-  count,
-  badge,
-  badgeColor,
-  compact,
-}: NavItemProps) {
+function NavItem({ href, icon: Icon, label, active }: NavItemProps) {
   return (
-    <Link
-      href={href}
+    <Button
+      asChild
+      variant="ghost"
       className={cn(
-        "group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[13px] font-medium transition-colors hover:bg-zinc-900 hover:text-zinc-200",
-        active ? "bg-zinc-900 text-zinc-100" : "text-zinc-400",
-        compact && "py-1 text-[13px]"
+        "w-full justify-start gap-2 px-3",
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       )}
     >
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className="h-4 w-4 stroke-[1.5]" />}
+      <Link href={href}>
+        {Icon && <Icon className="h-4 w-4" />}
         <span>{label}</span>
-        {badge && (
-          <span
-            className={cn(
-              "ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
-              badgeColor === "blue" && "bg-blue-500/10 text-blue-500",
-              badgeColor === "green" && "bg-green-500/10 text-green-500",
-              !badgeColor && "bg-zinc-800 text-zinc-400"
-            )}
-          >
-            {badge}
-          </span>
-        )}
-      </div>
-      {count !== undefined && (
-        <span className="text-[10px] text-zinc-600 group-hover:text-zinc-500">
-          {count}
-        </span>
-      )}
-    </Link>
+      </Link>
+    </Button>
   );
 }

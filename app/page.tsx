@@ -12,52 +12,89 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { Header } from "@/components/ui/header";
 import { cn } from "@/utils/cn";
 import { ComponentGrid } from "@/components/dashboard/component-grid";
+import { Suspense } from "react";
+import { DataGrid } from "@/components/dashboard/data-grid";
+import { GridSkeleton } from "@/components/dashboard/skeletons/grid-skeleton";
 
-export default async function Home() {
+// ... inside Home ...
+export default async function Home(props: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await props.searchParams;
+  const filterIds =
+    typeof searchParams.filters === "string"
+      ? searchParams.filters.split(",")
+      : [];
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  const signOut = async () => {
-    "use server";
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    return redirect("/login");
-  };
+  // ... auth check ...
 
-  // Fetch flows
+  // Fetch flows (unfiltered for now, or filter them too if they have tags?)
+  // Let's assume flows don't have filters in this phase as user focused on "components" filters.
   let flows: any[] = [];
   try {
+    // ... fetch flows ...
     const { data } = await supabase
       .from("flows")
       .select("*, flow_steps(count)")
       .order("created_at", { ascending: false });
     if (data) flows = data;
   } catch (e) {
-    console.error("Error fetching flows:", e);
+    console.error(e);
   }
 
   // Fetch components
   let components: any[] = [];
   try {
-    const { data } = await supabase
+    let query = supabase
       .from("components")
       .select("*")
       .order("created_at", { ascending: false });
+
+    // Apply Filters
+    if (filterIds.length > 0) {
+      // Find components that match filters
+      // Using inner join approach or two-step
+      // Two-step is easier with Supabase JS client usually, unless we use RPC
+
+      const { data: matchedRelations } = await supabase
+        .from("component_filters")
+        .select("component_id")
+        .in("filter_id", filterIds);
+
+      const matchedComponentIds =
+        matchedRelations?.map((r) => r.component_id as number) || [];
+
+      if (matchedComponentIds.length > 0) {
+        query = query.in("id", matchedComponentIds);
+      } else {
+        // No matches found for these filters
+        query = query.in("id", [-1]);
+      }
+    }
+
+    const { data } = await query;
     if (data) components = data;
   } catch (e) {
     console.error("Error fetching components:", e);
   }
 
+  const searchParamsKey = JSON.stringify(searchParams);
+
   return (
-    <div className="flex min-h-screen items-start bg-zinc-950 text-zinc-100 font-sans antialiased">
-      <Sidebar className="sticky top-0 h-screen" />
-      <div className="flex flex-1 flex-col min-w-0">
-        <Header />
-        <main className="flex-1 p-6 space-y-10">
-          <ComponentGrid flows={flows} components={components} />
-        </main>
+    <div className="flex h-screen w-full bg-sidebar font-sans antialiased overflow-hidden">
+      <Sidebar className="w-[260px] shrink-0 border-r-0" />
+
+      <div className="flex-1 flex flex-col h-full py-2 pr-2 pl-0">
+        <div className="flex-1 flex flex-col rounded-3xl border border-border bg-card overflow-hidden relative">
+          <Header className="bg-transparent border-b border-border/50 backdrop-blur-none" />
+          <main className="flex-1 overflow-y-auto p-8 space-y-10 scrollbar-thin">
+            <Suspense key={searchParamsKey} fallback={<GridSkeleton />}>
+              <DataGrid searchParams={searchParams} />
+            </Suspense>
+          </main>
+        </div>
       </div>
     </div>
   );

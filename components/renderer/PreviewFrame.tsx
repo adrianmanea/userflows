@@ -2,28 +2,45 @@
 import { useEffect, useRef } from "react";
 
 interface PreviewFrameProps {
-  code: string;
+  code?: string;
   theme?: "light" | "dark";
+  previewUrl?: string | null;
 }
 
-export function PreviewFrame({ code, theme = "light" }: PreviewFrameProps) {
+export function PreviewFrame({
+  code,
+  theme = "light",
+  previewUrl,
+}: PreviewFrameProps) {
   const iframeRef = useRef(null);
 
+  // If a static preview URL is provided, just use that.
+  if (previewUrl) {
+    return (
+      <div className="w-full h-full bg-transparent rounded-lg shadow-sm overflow-hidden border border-gray-200/0">
+        <iframe
+          src={previewUrl}
+          className="w-full h-full border-0"
+          title="Component Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </div>
+    );
+  }
+
+  // Fallback to runtime sandbox
   useEffect(() => {
     const iframe = iframeRef.current;
-    console.log("PreviewFrame mounted. Theme:", theme, "Has Code:", !!code);
     if (!iframe) return;
 
     // Allow iframe to load before sending messages
     const handleLoad = () => {
-      console.log("PreviewFrame: iframe 'load' event fired");
       // Send theme
       iframe.contentWindow?.postMessage(
         { type: "THEME_CHANGE", payload: theme },
         "*"
       );
       // Send code
-      console.log("PreviewFrame: sending RENDER_CODE");
       iframe.contentWindow?.postMessage(
         { type: "RENDER_CODE", payload: code },
         "*"
@@ -31,16 +48,13 @@ export function PreviewFrame({ code, theme = "light" }: PreviewFrameProps) {
     };
 
     iframe.addEventListener("load", handleLoad);
-
-    // If already loaded (e.g. re-render), send immediately
     if (iframe.contentDocument?.readyState === "complete") {
       handleLoad();
     }
-
     return () => iframe.removeEventListener("load", handleLoad);
   }, [code, theme]);
 
-  // Re-send code if it changes while iframe is already loaded
+  // Re-send code if it changes
   useEffect(() => {
     const iframe = iframeRef.current;
     if (iframe && iframe.contentDocument?.readyState === "complete") {

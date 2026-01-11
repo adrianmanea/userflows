@@ -47,7 +47,7 @@ export default async function ComponentPage({
   if (!component) component = MOCK_COMPONENT;
 
   return (
-    <div className="flex min-h-screen items-start bg-zinc-950 text-zinc-100 font-sans antialiased">
+    <div className="flex min-h-screen items-start bg-background text-foreground font-sans antialiased">
       <Sidebar className="sticky top-0 h-screen hidden lg:flex" />
       <div className="flex flex-1 flex-col min-w-0">
         <Header />
@@ -56,16 +56,16 @@ export default async function ComponentPage({
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="p-2 -ml-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">
+                <h1 className="text-2xl font-semibold text-foreground tracking-tight">
                   {component.name}
                 </h1>
                 {component.description && (
-                  <p className="text-sm text-zinc-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {component.description}
                   </p>
                 )}
@@ -76,31 +76,35 @@ export default async function ComponentPage({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Preview Config/Info */}
             <div className="space-y-6 lg:order-2">
-              <div className="bg-[#292929]/40 border border-zinc-800 rounded-2xl p-6 space-y-4">
-                <h3 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
-                  <Code className="h-4 w-4 text-zinc-500" />
+              <div className="bg-card/40 border border-border rounded-2xl p-6 space-y-4">
+                <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <Code className="h-4 w-4 text-muted-foreground" />
                   Metadata
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-xs text-zinc-500 block">
+                    <span className="text-xs text-muted-foreground block">
                       Original App
                     </span>
-                    <span className="text-sm text-zinc-300">
+                    <span className="text-sm text-foreground/80">
                       {component.original_app || "N/A"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-zinc-500 block">Tags</span>
+                    <span className="text-xs text-muted-foreground block">
+                      Tags
+                    </span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {component.tags?.map((tag: string) => (
                         <span
                           key={tag}
-                          className="px-2 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-400"
+                          className="px-2 py-1 rounded-md bg-secondary border border-border text-xs text-secondary-foreground"
                         >
                           {tag}
                         </span>
-                      )) || <span className="text-sm text-zinc-300">-</span>}
+                      )) || (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -108,8 +112,11 @@ export default async function ComponentPage({
             </div>
 
             {/* Preview Area */}
-            <div className="lg:col-span-2 lg:order-1 h-[600px] bg-[#1e1e1e] border border-zinc-800 rounded-2xl overflow-hidden relative">
-              <PreviewFrame code={component.code_string} theme="dark" />
+            <div className="lg:col-span-2 lg:order-1 h-[600px] bg-background border border-border rounded-2xl overflow-hidden relative shadow-sm">
+              <PreviewFrame
+                code={component.code_string}
+                previewUrl={component.preview_url}
+              />
             </div>
           </div>
         </main>

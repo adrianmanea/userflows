@@ -53,7 +53,7 @@ export default async function PreviewPage({
   if (!component) component = MOCK_COMPONENT;
 
   return (
-    <div className="w-full h-screen bg-zinc-950 overflow-hidden">
+    <div className="w-full h-screen overflow-hidden">
       <PreviewFrame code={component.code_string} theme="dark" />
     </div>
   );
