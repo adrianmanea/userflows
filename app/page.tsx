@@ -82,13 +82,30 @@ export default async function Home(props: {
 
   const searchParamsKey = JSON.stringify(searchParams);
 
+  // Fetch breadcrumb label if filter is active
+  let breadcrumbs = undefined;
+  if (filterIds.length > 0) {
+    const { data: filtersData } = await supabase
+      .from("filter_definitions")
+      .select("name")
+      .in("id", filterIds)
+      .single();
+
+    if (filtersData) {
+      breadcrumbs = [{ label: filtersData.name }];
+    }
+  }
+
   return (
     <div className="flex h-screen w-full bg-sidebar font-sans antialiased overflow-hidden">
       <Sidebar className="w-[260px] shrink-0 border-r-0" />
 
       <div className="flex-1 flex flex-col h-full py-2 pr-2 pl-0">
         <div className="flex-1 flex flex-col rounded-3xl border border-border bg-card overflow-hidden relative">
-          <Header className="bg-transparent border-b border-border/50 backdrop-blur-none" />
+          <Header
+            className="bg-transparent border-b border-border/50 backdrop-blur-none"
+            breadcrumbs={breadcrumbs}
+          />
           <main className="flex-1 overflow-y-auto p-8 space-y-10 scrollbar-thin">
             <Suspense key={searchParamsKey} fallback={<GridSkeleton />}>
               <DataGrid searchParams={searchParams} />

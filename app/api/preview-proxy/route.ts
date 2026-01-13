@@ -9,9 +9,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Security check: Only allow fetching from Supabase storage
+    // Security check: Only allow fetching from Supabase storage and trusted CDNs
     const urlObj = new URL(targetUrl);
-    if (!urlObj.hostname.endsWith("supabase.co")) {
+    const allowedDomains = ["supabase.co"];
+    const isAllowed = allowedDomains.some((domain) =>
+      urlObj.hostname.endsWith(domain)
+    );
+
+    if (!isAllowed) {
       return new NextResponse("Invalid URL domain", { status: 403 });
     }
 

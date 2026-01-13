@@ -65,5 +65,20 @@ export async function DataGrid({ searchParams }: DataGridProps) {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  return <ComponentGrid items={items} />;
+  // Fetch filter names for title
+  let title = "Latest";
+  if (filterIds.length > 0) {
+    const { data: filtersData } = await supabase
+      .from("filter_definitions")
+      .select("name")
+      .in("id", filterIds);
+
+    if (filtersData && filtersData.length > 0) {
+      title = filtersData.map((f) => f.name).join(" + ");
+    } else {
+      title = "Filtered Results";
+    }
+  }
+
+  return <ComponentGrid items={items} title={title} />;
 }

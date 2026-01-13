@@ -80,16 +80,20 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   }, []);
 
   const toggleFilter = (id: string) => {
-    const newFilters = activeFilterIds.includes(id)
-      ? activeFilterIds.filter((fid) => fid !== id)
-      : [...activeFilterIds, id];
+    // Single Select Logic:
+    // If clicked filter is already active -> clear it (return to Home)
+    // If different filter -> replace it
+    const isCurrentlyActive = activeFilterIds.includes(id);
 
     const params = new URLSearchParams(searchParams.toString());
-    if (newFilters.length > 0) {
-      params.set("filters", newFilters.join(","));
-    } else {
+
+    if (isCurrentlyActive) {
       params.delete("filters");
+    } else {
+      // Replace entire filters param with just this ID
+      params.set("filters", id);
     }
+
     router.push(`/?${params.toString()}`);
   };
 

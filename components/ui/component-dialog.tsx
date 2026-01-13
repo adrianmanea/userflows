@@ -2,8 +2,12 @@
 
 import { X, ExternalLink, User } from "lucide-react";
 import Link from "next/link";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { DialogTitle } from "@radix-ui/react-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface ComponentDialogProps {
   isOpen: boolean;

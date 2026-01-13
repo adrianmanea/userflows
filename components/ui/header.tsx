@@ -9,15 +9,18 @@ import { cn } from "@/utils/cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoginDialog } from "@/components/auth/login-dialog";
+import { SearchPopover } from "@/components/search/search-popover";
 
 interface HeaderProps {
   className?: string;
+  breadcrumbs?: { label: string; href?: string }[];
 }
 
-export function Header({ className }: HeaderProps) {
+export function Header({ className, breadcrumbs }: HeaderProps) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -67,13 +70,48 @@ export function Header({ className }: HeaderProps) {
       </Button>
 
       <div className="flex flex-1 items-center gap-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
-          <Input
-            type="search"
-            placeholder="Search components..."
-            className="h-9 w-full rounded-full border-border bg-muted/50 pl-9 pr-4 text-[13px] hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-border"
-          />
+        {/* Breadcrumbs (Desktop) */}
+        {breadcrumbs && breadcrumbs.length > 0 ? (
+          <div className="hidden lg:flex items-center text-sm font-medium text-muted-foreground">
+            <Link href="/" className="hover:text-foreground transition-colors">
+              Components
+            </Link>
+            {breadcrumbs.map((crumb, i) => (
+              <div key={i} className="flex items-center">
+                <span className="mx-2 text-border">/</span>
+                <span
+                  className={cn(
+                    "text-foreground",
+                    crumb.href ? "hover:text-foreground/80" : ""
+                  )}
+                >
+                  {crumb.href ? (
+                    <Link href={crumb.href}>{crumb.label}</Link>
+                  ) : (
+                    crumb.label
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="hidden lg:flex items-center text-sm font-medium text-muted-foreground/50">
+            Components
+          </div>
+        )}
+
+        <div className="relative w-full max-w-sm ml-auto lg:ml-0">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-muted-foreground bg-muted/50 border-border hover:bg-muted h-9 rounded-full px-3 text-[13px] font-normal"
+            onClick={() => setIsSearchOpen(true)}
+          >
+            <Search className="mr-2 h-4 w-4" />
+            Search components...
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground ml-auto opacity-50">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
         </div>
       </div>
 
@@ -116,6 +154,7 @@ export function Header({ className }: HeaderProps) {
       </div>
 
       <LoginDialog isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <SearchPopover open={isSearchOpen} onOpenChange={setIsSearchOpen} />
     </header>
   );
 }

@@ -10,7 +10,6 @@
         "imports": {
           "react": "https://esm.sh/react@18.2.0",
           "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-          "framer-motion": "https://esm.sh/framer-motion@10.12.16",
           "lucide-react": "https://esm.sh/lucide-react@0.263.1"
         }
       }
@@ -27,11 +26,9 @@
     <script type="module">
       import React from "react";
       import { createRoot } from "react-dom/client";
-      import * as motion from "framer-motion";
       import * as LucideIcons from "lucide-react";
 
       window.addEventListener("message", (event) => {
-        console.log("Sandbox received message:", event.data.type);
         const { type, payload } = event.data;
 
         if (type === "THEME_CHANGE") {
@@ -50,15 +47,9 @@
           const root = createRoot(rootElement);
 
           try {
-            console.log("Sandbox: Stripping code...");
             const strippedCode = code
               .replace(/import\s+.*?from\s+['"].*?['"];?/g, "")
               .replace(/export\s+default\s+/g, "");
-
-            console.log(
-              "Sandbox: strippedCode:",
-              strippedCode.slice(0, 100) + "..."
-            );
 
             // Add all Lucide icons to scope
             const scope = { React, ...motion, ...LucideIcons };
@@ -73,14 +64,11 @@
               `
             );
 
-            console.log("Sandbox: Evaluating code...");
             const Component = runCode(...scopeValues);
-            console.log("Sandbox: Resolved Component:", Component);
 
             if (Component) {
               root.render(React.createElement(Component));
             } else {
-              console.error("Sandbox: Component not found in code");
               root.render(
                 React.createElement(
                   "div",

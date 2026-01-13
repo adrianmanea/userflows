@@ -16,6 +16,7 @@ import { FilterSelector } from "./filter-selector";
 import { updateComponent } from "@/utils/actions";
 import { Edit } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { DialogDescription } from "@/components/ui/dialog";
 
 interface ComponentEditDialogProps {
   component: any;
@@ -35,6 +36,7 @@ export function ComponentEditDialog({
   const [selectedFilters, setSelectedFilters] =
     useState<string[]>(currentFilters);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [htmlFile, setHtmlFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const supabase = createClient();
 
@@ -42,6 +44,7 @@ export function ComponentEditDialog({
     startTransition(async () => {
       try {
         let thumbnailUrl = component.thumbnail_url;
+        let previewUrl = component.preview_url;
 
         // Upload new thumbnail if selected
         if (thumbnailFile) {
@@ -64,11 +67,42 @@ export function ComponentEditDialog({
           thumbnailUrl = publicUrlData.publicUrl;
         }
 
+        // Upload new HTML file if selected
+        if (htmlFile) {
+          setIsUploading(true);
+          const fileExt = htmlFile.name.split(".").pop();
+          const fileName = `${component.id}-${Date.now()}.${fileExt}`;
+
+          // Force conversion to Blob with proper type
+          const blob = new Blob([htmlFile], { type: "text/html" });
+
+          const { error: uploadError } = await supabase.storage
+            .from("component-previews")
+            .upload(fileName, blob, { upsert: true, contentType: "text/html" });
+
+          if (uploadError) throw uploadError;
+
+          const { data: publicUrlData } = supabase.storage
+            .from("component-previews")
+            .getPublicUrl(fileName);
+
+          previewUrl = publicUrlData.publicUrl;
+        } else {
+          // Check for external URL input
+          const urlInput = document.getElementById(
+            "external-url-input"
+          ) as HTMLInputElement;
+          if (urlInput && urlInput.value) {
+            previewUrl = urlInput.value;
+          }
+        }
+
         // Update component details
         await updateComponent(component.id, {
           name,
           description,
           thumbnail_url: thumbnailUrl,
+          preview_url: previewUrl,
         });
 
         // Update filters
@@ -102,9 +136,13 @@ export function ComponentEditDialog({
           <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-background border-border text-foreground">
+      <DialogContent className="w-full !max-w-[90vw] max-h-[85vh] overflow-y-auto bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Edit Component</DialogTitle>
+          <DialogDescription>
+            Make changes to your component details here. Click save when you're
+            done.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -136,12 +174,88 @@ export function ComponentEditDialog({
                 className="bg-background border-input text-xs"
               />
               {(thumbnailFile || component.thumbnail_url) && (
-                <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                  {thumbnailFile
-                    ? "New file selected"
-                    : "Current thumbnail set"}
-                </span>
+                <div className="relative h-10 w-16 flex-shrink-0 overflow-hidden rounded border border-border">
+                  {thumbnailFile ? (
+                    <img
+                      src={URL.createObjectURL(thumbnailFile)}
+                      alt="New thumbnail"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={component.thumbnail_url}
+                      alt="Current thumbnail"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
               )}
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Component Source</Label>
+
+            <div className="space-y-4 pt-2">
+              <div className="grid gap-2 p-3 border border-border rounded-lg bg-muted/20">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Option A: Upload HTML File (Replaces URL)
+                </Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="file"
+                    accept=".html"
+                    onChange={(e) => {
+                      setHtmlFile(e.target.files?.[0] || null);
+                      // Clear URL input if file is selected
+                      const urlInput = document.getElementById(
+                        "external-url-input"
+                      ) as HTMLInputElement;
+                      if (urlInput) urlInput.value = "";
+                    }}
+                    className="bg-background border-input text-xs"
+                  />
+                  {htmlFile && (
+                    <span className="text-xs text-green-500 truncate max-w-[100px]">
+                      New HTML selected
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative flex items-center justify-center">
+                <span className="bg-background px-2 text-xs text-muted-foreground uppercase">
+                  OR
+                </span>
+                <div className="absolute inset-0 border-t border-border -z-10"></div>
+              </div>
+
+              <div className="grid gap-2 p-3 border border-border rounded-lg bg-muted/20">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Option B: External URL
+                </Label>
+                <Input
+                  type="url"
+                  placeholder="https://..."
+                  defaultValue={
+                    component.preview_url?.startsWith("http") &&
+                    !component.preview_url?.includes("supabase.co")
+                      ? component.preview_url
+                      : ""
+                  }
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setHtmlFile(null); // Clear file if URL provided
+                    }
+                  }}
+                  className="bg-background border-input text-xs font-mono"
+                  id="external-url-input"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Provide a direct link to a hosted preview (e.g. Vercel,
+                  Netlify).
+                </p>
+              </div>
             </div>
           </div>
           <div className="grid gap-2">

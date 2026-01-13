@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Check, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, X, Search } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 type FilterDefinition = {
@@ -29,6 +29,7 @@ export function FilterSelector({
     "category" | "screen" | "ui_element" | "flow"
   >("category");
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function fetchFilters() {
@@ -60,12 +61,18 @@ export function FilterSelector({
     }
   };
 
-  // Group filters by section and group_name
-  const currentSectionFilters = filters.filter((f) => f.section === activeTab);
+  // 1. Filter by Search Query (if exists)
+  // If searching, we might blindly show all regardless of tab OR keep tab filtering.
+  // Usually better to search across EVERYTHING if query exists.
+  const filteredBySearch = searchQuery
+    ? filters.filter((f) =>
+        f.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : filters.filter((f) => f.section === activeTab);
 
   // Grouping logic
   const groupedFilters: Record<string, FilterDefinition[]> = {};
-  currentSectionFilters.forEach((f) => {
+  filteredBySearch.forEach((f) => {
     const group = f.group_name || "General";
     if (!groupedFilters[group]) groupedFilters[group] = [];
     groupedFilters[group].push(f);
@@ -75,26 +82,42 @@ export function FilterSelector({
 
   return (
     <div className="space-y-4">
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto">
-        {(["category", "screen", "ui_element", "flow"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
-              activeTab === tab
-                ? "bg-secondary text-secondary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-          >
-            {tab === "category" && "Categories"}
-            {tab === "screen" && "Screens"}
-            {tab === "ui_element" && "UI Elements"}
-            {tab === "flow" && "Flows"}
-          </button>
-        ))}
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search tags..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 bg-muted/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        />
       </div>
+
+      {/* Tabs (Hide if searching) */}
+      {!searchQuery && (
+        <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto">
+          {(["category", "screen", "ui_element", "flow"] as const).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
+                  activeTab === tab
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {tab === "category" && "Categories"}
+                {tab === "screen" && "Screens"}
+                {tab === "ui_element" && "UI Elements"}
+                {tab === "flow" && "Flows"}
+              </button>
+            )
+          )}
+        </div>
+      )}
 
       {/* Filter List */}
       <div className="h-[300px] overflow-y-auto pr-2 space-y-2 border border-border rounded-lg p-2 bg-muted/20">
@@ -106,7 +129,9 @@ export function FilterSelector({
           sortedGroups.map((group) => (
             <div key={group} className="space-y-1">
               {/* Group Header (only if not 'General' or distinct groups exist) */}
-              {activeTab !== "category" && (
+              {/* If searching, showing group headers is optional but nice for context. 
+                  If not searching, check activeTab. */}
+              {!searchQuery && activeTab !== "category" && (
                 <button
                   onClick={() => toggleGroup(group)}
                   className="w-full flex items-center justify-between text-left text-xs font-medium text-muted-foreground py-1.5 px-2 hover:bg-muted/50 rounded"
@@ -121,8 +146,14 @@ export function FilterSelector({
               )}
 
               {/* Items */}
-              {/* Always show if category (flat list usually), or if expanded */}
-              {(activeTab === "category" || expandedGroups.includes(group)) && (
+              {/* Always show if:
+                  1. activeTab == 'category' (flat list)
+                  2. expandedGroups has it
+                  3. Searching (show all matches expanded)
+              */}
+              {(activeTab === "category" ||
+                expandedGroups.includes(group) ||
+                searchQuery) && (
                 <div
                   className={cn(
                     "grid grid-cols-2 gap-1",

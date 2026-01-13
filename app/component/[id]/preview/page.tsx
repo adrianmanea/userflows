@@ -36,22 +36,12 @@ export default async function PreviewPage({
         .eq("id", id)
         .single();
       if (data) {
-        console.log("Found Component:", data.name);
         component = data;
-      } else {
-        console.log("Component Not Found for ID:", id);
       }
-    } else {
-      console.log("Supabase Not Configured");
     }
   } catch (e) {
     console.error("Error fetching component:", e);
   }
-
-  console.log(
-    "Render Component Code:",
-    component?.code_string?.slice(0, 50) + "..."
-  );
 
   if (!component) component = MOCK_COMPONENT;
 

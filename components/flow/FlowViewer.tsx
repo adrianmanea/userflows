@@ -36,7 +36,7 @@ export default function FlowViewer({ steps }: FlowViewerProps) {
       <header className="bg-white border-b py-4 px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="font-bold text-xl">
-            UserFlows
+            PageInspo.com
           </Link>
           <div className="h-6 w-px bg-gray-200"></div>
           <div className="text-sm text-gray-500">

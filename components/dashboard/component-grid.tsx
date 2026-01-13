@@ -6,7 +6,15 @@ import { LayoutGrid, ArrowRight, Component } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { ComponentDialog } from "@/components/ui/component-dialog";
 
-export function ComponentGrid({ items }: { items: any[] }) {
+export function ComponentGrid({
+  items,
+  title = "Latest",
+  description,
+}: {
+  items: any[];
+  title?: string;
+  description?: string;
+}) {
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
 
   return (
@@ -20,11 +28,11 @@ export function ComponentGrid({ items }: { items: any[] }) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Latest
+            {title}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Freshly baked components from the community.
-          </p>
+          {description && (
+            <p className="text-muted-foreground mt-1 text-sm">{description}</p>
+          )}
         </div>
       </div>
 
