@@ -25,7 +25,20 @@ export default function AdminClientPage() {
 
   const handleSave = async () => {
     if (!name) {
-      setMessage({ text: "Name is required", type: "error" });
+      setMessage({ type: "error", text: "Name is required" });
+      return;
+    }
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      setMessage({
+        type: "error",
+        text: "You must be logged in to publish. Please log in and try again.",
+      });
       return;
     }
 
@@ -53,9 +66,13 @@ export default function AdminClientPage() {
       setOriginalApp("");
     } catch (e: any) {
       console.error(e);
+      let msg = e.message;
+      if (msg.includes("row-level security policy")) {
+        msg = "Permission denied. Please ensure you are logged in.";
+      }
       setMessage({
-        text: "Error saving component: " + e.message,
         type: "error",
+        text: "Error publishing: " + msg,
       });
     } finally {
       setIsSaving(false);

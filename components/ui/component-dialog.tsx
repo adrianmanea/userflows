@@ -66,7 +66,13 @@ export function ComponentDialog({
         {/* Content (Iframe) */}
         <div className="flex-1 bg-background relative overflow-hidden">
           <iframe
-            src={component.preview_url || `/component/${component.id}/preview`}
+            src={
+              component.preview_url
+                ? `/api/preview-proxy?url=${encodeURIComponent(
+                    component.preview_url
+                  )}`
+                : `/component/${component.id}/preview`
+            }
             className="w-full h-full border-0"
             title="Component Preview"
             sandbox="allow-scripts allow-same-origin"

@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { PreviewFrame } from "@/components/renderer/PreviewFrame";
 import { Sidebar } from "@/components/ui/sidebar";
+
+export const dynamic = "force-dynamic";
 import { Header } from "@/components/ui/header";
 import Link from "next/link";
 import { ArrowLeft, Code, ExternalLink } from "lucide-react";
@@ -115,7 +117,13 @@ export default async function ComponentPage({
             <div className="lg:col-span-2 lg:order-1 h-[600px] bg-background border border-border rounded-2xl overflow-hidden relative shadow-sm">
               <PreviewFrame
                 code={component.code_string}
-                previewUrl={component.preview_url}
+                previewUrl={
+                  component.preview_url
+                    ? `/api/preview-proxy?url=${encodeURIComponent(
+                        component.preview_url
+                      )}`
+                    : null
+                }
               />
             </div>
           </div>

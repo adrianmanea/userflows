@@ -14,22 +14,10 @@ export function PreviewFrame({
 }: PreviewFrameProps) {
   const iframeRef = useRef(null);
 
-  // If a static preview URL is provided, just use that.
-  if (previewUrl) {
-    return (
-      <div className="w-full h-full bg-transparent rounded-lg shadow-sm overflow-hidden border border-gray-200/0">
-        <iframe
-          src={previewUrl}
-          className="w-full h-full border-0"
-          title="Component Preview"
-          sandbox="allow-scripts allow-same-origin"
-        />
-      </div>
-    );
-  }
-
-  // Fallback to runtime sandbox
+  // Fallback to runtime sandbox logic (only runs if no previewUrl)
   useEffect(() => {
+    if (previewUrl) return; // Skip if we are in URL mode
+
     const iframe = iframeRef.current;
     if (!iframe) return;
 
@@ -52,10 +40,11 @@ export function PreviewFrame({
       handleLoad();
     }
     return () => iframe.removeEventListener("load", handleLoad);
-  }, [code, theme]);
+  }, [code, theme, previewUrl]);
 
   // Re-send code if it changes
   useEffect(() => {
+    if (previewUrl) return;
     const iframe = iframeRef.current;
     if (iframe && iframe.contentDocument?.readyState === "complete") {
       iframe.contentWindow?.postMessage(
@@ -63,10 +52,11 @@ export function PreviewFrame({
         "*"
       );
     }
-  }, [code]);
+  }, [code, previewUrl]);
 
   // Re-send theme if it changes
   useEffect(() => {
+    if (previewUrl) return;
     const iframe = iframeRef.current;
     if (iframe && iframe.contentDocument?.readyState === "complete") {
       iframe.contentWindow?.postMessage(
@@ -74,7 +64,21 @@ export function PreviewFrame({
         "*"
       );
     }
-  }, [theme]);
+  }, [theme, previewUrl]);
+
+  // If a static preview URL is provided, just use that.
+  if (previewUrl) {
+    return (
+      <div className="w-full h-full bg-transparent rounded-lg shadow-sm overflow-hidden border border-gray-200/0">
+        <iframe
+          src={previewUrl}
+          className="w-full h-full border-0"
+          title="Component Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full bg-transparent rounded-lg shadow-sm overflow-hidden border border-gray-200/0">

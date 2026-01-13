@@ -1,6 +1,9 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { PreviewFrame } from "@/components/renderer/PreviewFrame";
 
+// Force dynamic to ensure we don't cache stale preview URLs
+export const dynamic = "force-dynamic";
+
 // Mock Data
 const MOCK_COMPONENT = {
   name: "Login Screen",
@@ -54,7 +57,17 @@ export default async function PreviewPage({
 
   return (
     <div className="w-full h-screen overflow-hidden">
-      <PreviewFrame code={component.code_string} theme="dark" />
+      <PreviewFrame
+        code={component.code_string}
+        previewUrl={
+          component.preview_url
+            ? `/api/preview-proxy?url=${encodeURIComponent(
+                component.preview_url
+              )}`
+            : null
+        }
+        theme="dark"
+      />
     </div>
   );
 }

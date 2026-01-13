@@ -85,7 +85,7 @@ export default function AdminClientPage() {
 
         const { error: uploadError } = await supabase.storage
           .from("component-previews")
-          .upload(fileName, blob, { upsert: true });
+          .upload(fileName, blob, { upsert: true, contentType: "text/html" });
 
         if (uploadError)
           throw new Error("Upload failed: " + uploadError.message);
@@ -101,9 +101,13 @@ export default function AdminClientPage() {
         const fileExt = file.name.split(".").pop();
         const fileName = `${componentId}.${fileExt}`;
 
+        // Force conversion to Blob with proper type to override browser detection
+        const blob = new Blob([file], { type: "text/html" });
+        console.log("Uploading file as text/html:", fileName, blob.type);
+
         const { error: uploadError } = await supabase.storage
           .from("component-previews")
-          .upload(fileName, file, { upsert: true });
+          .upload(fileName, blob, { upsert: true, contentType: "text/html" });
 
         if (uploadError)
           throw new Error("Upload failed: " + uploadError.message);

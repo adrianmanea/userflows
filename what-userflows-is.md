@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-**UserFlows** is a curated library of interactive UI flows (Onboarding, Checkout, Account Management) captured from world-class applications. Unlike Mobbin, which focuses on static screenshots, FlowState provides **standardized, promptable code** and **functional logic** for every flow. It uses a proprietary AI-pipeline to transform scraped DOM structures into clean, framework-agnostic Tailwind/React components.
+**PageInspo** is a curated library of interactive UI flows (Onboarding, Checkout, Account Management) captured from world-class applications. Unlike Mobbin, which focuses on static screenshots, PageInspo provides **standardized, promptable code** and **functional logic** for every flow. It uses a proprietary AI-pipeline to transform scraped DOM structures into clean, framework-agnostic Tailwind/React components.
 
 ---
 
@@ -34,7 +34,7 @@
 
 - **The "v0" & "Cursor" Integration:** Create a public API or a simple "Paste to Cursor" button. This places your tool directly in the developer's workflow.
 - **SEO via "Logic Patterns":** Optimize for high-intent dev searches like _"Multi-step form with progress bar react code"_ or _"Best mobile checkout flows 2026."_
-- **"Side Project" Marketing:** Launch a free "UI Audit" tool that analyzes a user's current URL and suggests a "FlowState Improvement" based on industry leaders.
+- **"Side Project" Marketing:** Launch a free "UI Audit" tool that analyzes a user's current URL and suggests a "PageInspo Improvement" based on industry leaders.
 - **Product Hunt / X (Twitter):** Post "Before & After" videos: "I took Airbnb's complex booking flow and turned it into a clean Tailwind component in 30 seconds."
 
 ---
@@ -64,14 +64,14 @@
 
 ### **Phase 3: The Integration**
 
-- Figma-to-Code-to-FlowState sync.
+- Figma-to-Code-to-PageInspo sync.
 - API for dynamic prompt generation inside IDEs.
 
 ---
 
 ## 7. Comparative Advantage
 
-| **Feature** | **Mobbin / PageFlows** | **FlowState**                |
+| **Feature** | **Mobbin / PageFlows** | **PageInspo**                |
 | ----------- | ---------------------- | ---------------------------- |
 | **Format**  | Static Image / Video   | **Live Interactive Code**    |
 | **Action**  | "Look and Learn"       | **"Copy and Build"**         |

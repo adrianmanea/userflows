@@ -105,8 +105,9 @@ export function Header({ className }: HeaderProps) {
         ) : (
           <Button
             size="sm"
+            variant="outline"
             onClick={() => setIsLoginOpen(true)}
-            className="rounded-full px-4 h-8 text-[13px] font-medium gap-2"
+            className="rounded-full px-4 h-8 text-[13px] font-medium gap-2 cursor-pointer"
           >
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Log In</span>
