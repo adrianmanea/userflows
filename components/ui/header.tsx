@@ -103,12 +103,12 @@ export function Header({ className, breadcrumbs }: HeaderProps) {
         <div className="relative w-full max-w-sm ml-auto lg:ml-0">
           <Button
             variant="outline"
-            className="w-full justify-start text-muted-foreground bg-muted/50 border-border hover:bg-muted h-9 rounded-full px-3 text-[13px] font-normal"
+            className="w-full justify-start text-muted-foreground bg-muted/50 border-border hover:bg-muted h-9 rounded-full px-3 text-[13px] font-normal cursor-pointer"
             onClick={() => setIsSearchOpen(true)}
           >
             <Search className="mr-2 h-4 w-4" />
             Search components...
-            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground ml-auto opacity-50">
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground ml-auto">
               <span className="text-xs">⌘</span>K
             </kbd>
           </Button>

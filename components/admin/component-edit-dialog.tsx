@@ -176,10 +176,29 @@ export function ComponentEditDialog({
               {(thumbnailFile || component.thumbnail_url) && (
                 <div className="relative h-10 w-16 flex-shrink-0 overflow-hidden rounded border border-border">
                   {thumbnailFile ? (
-                    <img
-                      src={URL.createObjectURL(thumbnailFile)}
-                      alt="New thumbnail"
+                    thumbnailFile.type.startsWith("video/") ? (
+                      <video
+                        src={URL.createObjectURL(thumbnailFile)}
+                        className="h-full w-full object-cover"
+                        itemProp="video"
+                        muted
+                        loop
+                        playsInline
+                      />
+                    ) : (
+                      <img
+                        src={URL.createObjectURL(thumbnailFile)}
+                        alt="New thumbnail"
+                        className="h-full w-full object-cover"
+                      />
+                    )
+                  ) : component.thumbnail_url?.match(/\.(mp4|webm)$/i) ? (
+                    <video
+                      src={component.thumbnail_url}
                       className="h-full w-full object-cover"
+                      muted
+                      loop
+                      playsInline
                     />
                   ) : (
                     <img

@@ -1,27 +1,22 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { PreviewFrame } from "@/components/renderer/PreviewFrame";
-import { Sidebar } from "@/components/ui/sidebar";
+import { PreviewClient } from "./preview-client";
 
+// Force dynamic to ensure we don't cache stale preview URLs
 export const dynamic = "force-dynamic";
-import { Header } from "@/components/ui/header";
-import Link from "next/link";
-import { ArrowLeft, Code, ExternalLink } from "lucide-react";
 
 // Mock Data
 const MOCK_COMPONENT = {
   name: "Login Screen",
-  description: "A simple login screen with email and password fields.",
   code_string: `
     function Component() {
       return (
-        <div className="p-8 bg-zinc-950 min-h-screen flex flex-col justify-center text-white">
-          <h1 className="text-2xl font-bold mb-6">Component View</h1>
+        <div className="p-8 bg-black min-h-screen flex flex-col justify-center text-white">
+          <h1 className="text-2xl font-bold mb-6">Preview Mode</h1>
+          <p className="mb-4">This is the preview of the component.</p>
         </div>
       )
     }
   `,
-  original_app: "Mock App",
-  tags: ["auth", "form"],
 };
 
 export default async function ComponentPage({
@@ -32,103 +27,59 @@ export default async function ComponentPage({
   const { id } = await params;
 
   let component = null;
+  let variants: any[] = [];
 
   try {
     if (isSupabaseConfigured) {
-      const { data } = await supabase
+      const { data: compData } = await supabase
         .from("components")
         .select("*")
         .eq("id", id)
         .single();
-      if (data) component = data;
+
+      if (compData) {
+        component = compData;
+
+        // Fetch variants
+        const { data: varData } = await supabase
+          .from("component_variants")
+          .select("*")
+          .eq("component_id", id)
+          .order("is_default", { ascending: false }) // Default first
+          .order("created_at", { ascending: true });
+
+        if (varData && varData.length > 0) {
+          variants = varData;
+        } else {
+          // Implicit default variant from the main component data
+          variants = [
+            {
+              id: "default-legacy",
+              name: "Default",
+              code_string: component.code_string,
+              preview_url: component.preview_url,
+              is_default: true,
+            },
+          ];
+        }
+      }
     }
   } catch (e) {
-    console.error(e);
+    console.error("Error fetching component:", e);
   }
 
   if (!component) component = MOCK_COMPONENT;
+  // Mock variants for offline/mock mode
+  if (variants.length === 0 && component === MOCK_COMPONENT) {
+    variants = [
+      {
+        id: "mock-default",
+        name: "Default",
+        code_string: MOCK_COMPONENT.code_string,
+        is_default: true,
+      },
+    ];
+  }
 
-  return (
-    <div className="flex min-h-screen items-start bg-background text-foreground font-sans antialiased">
-      <Sidebar className="sticky top-0 h-screen hidden lg:flex" />
-      <div className="flex flex-1 flex-col min-w-0">
-        <Header />
-        <main className="flex-1 p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-                  {component.name}
-                </h1>
-                {component.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {component.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Preview Config/Info */}
-            <div className="space-y-6 lg:order-2">
-              <div className="bg-card/40 border border-border rounded-2xl p-6 space-y-4">
-                <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Code className="h-4 w-4 text-muted-foreground" />
-                  Metadata
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-xs text-muted-foreground block">
-                      Original App
-                    </span>
-                    <span className="text-sm text-foreground/80">
-                      {component.original_app || "N/A"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground block">
-                      Tags
-                    </span>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {component.tags?.map((tag: string) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-1 rounded-md bg-secondary border border-border text-xs text-secondary-foreground"
-                        >
-                          {tag}
-                        </span>
-                      )) || (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Preview Area */}
-            <div className="lg:col-span-2 lg:order-1 h-[600px] bg-background border border-border rounded-2xl overflow-hidden relative shadow-sm">
-              <PreviewFrame
-                code={component.code_string}
-                previewUrl={
-                  component.preview_url
-                    ? `/api/preview-proxy?url=${encodeURIComponent(
-                        component.preview_url
-                      )}`
-                    : null
-                }
-              />
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  return <PreviewClient component={component} variants={variants} />;
 }

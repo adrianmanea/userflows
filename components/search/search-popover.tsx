@@ -103,18 +103,21 @@ export function SearchPopover({ open, onOpenChange }: SearchPopoverProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[90vw] w-[816px] h-[85vh] max-h-[720px] p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-md border-border shadow-2xl rounded-3xl flex flex-col">
+      <DialogContent className="sm:max-w-4xl w-full h-[85vh] max-h-[720px] p-0 gap-0 overflow-hidden bg-background backdrop-blur-md border-border shadow-2xl rounded-3xl flex flex-col [&>button]:hidden">
         <DialogTitle className="sr-only">Search</DialogTitle>
+        <DialogDescription className="sr-only">
+          Search for components, screens, flows and more.
+        </DialogDescription>
         {/* Header Section */}
         <div className="flex flex-col border-b border-border/40">
-          <div className="flex items-center gap-4 px-6 py-5">
-            <div className="flex-1 flex items-center gap-3 bg-muted/40 rounded-full px-4 h-12 border border-transparent focus-within:border-primary/20 focus-within:bg-muted/60 transition-all">
-              <Search className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-4 px-4 py-4">
+            <div className="flex-1 flex items-center gap-3 bg-transparent rounded-full pr-4 h-12 border-none transition-all">
+              <Search className="h-6 w-6 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Web Apps, Screens, UI Elements, Flows or Keywords..."
-                className="flex-1 bg-transparent border-0 h-full p-0 text-base placeholder:text-muted-foreground/60 focus-visible:ring-0 shadow-none"
+                className="flex-1 bg-transparent border-0 h-full p-0 text-xl placeholder:text-muted-foreground/50 focus-visible:ring-0 shadow-none"
               />
               {searchQuery && (
                 <button onClick={() => setSearchQuery("")}>
@@ -133,6 +136,14 @@ export function SearchPopover({ open, onOpenChange }: SearchPopoverProps) {
                   ESC
                 </kbd>
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -140,7 +151,7 @@ export function SearchPopover({ open, onOpenChange }: SearchPopoverProps) {
         {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <aside className="hidden md:flex flex-col w-[200px] border-r border-border/40 p-4 gap-1 overflow-y-auto bg-muted/20">
+          <aside className="hidden md:flex flex-col w-[240px] border-r border-border/40 p-4 gap-1 overflow-y-auto">
             {sidebarTabs.map((tab) => (
               <button
                 key={tab.value}
@@ -166,7 +177,7 @@ export function SearchPopover({ open, onOpenChange }: SearchPopoverProps) {
           </aside>
 
           {/* Results List */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
             <div className="space-y-6">
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">
