@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/utils/cn";
-import {
-  LayoutDashboard,
-  PlusCircle,
-  Component,
-  LogOut,
-  ArrowLeft,
-} from "lucide-react";
+import { PlusCircle, Component, ArrowLeft, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminSidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -33,7 +27,7 @@ export function AdminSidebar({ className, ...props }: AdminSidebarProps) {
         >
           <Link href="/">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold text-[10px]">
-              UF
+              PI
             </div>
             <span className="text-sm font-semibold tracking-tight">Admin</span>
           </Link>
@@ -54,6 +48,12 @@ export function AdminSidebar({ className, ...props }: AdminSidebarProps) {
             icon={PlusCircle}
             label="Add New"
             active={pathname === "/admin"}
+          />
+          <NavItem
+            href="/admin/sources"
+            icon={Database}
+            label="Manage Sources"
+            active={pathname === "/admin/sources"}
           />
         </div>
 

@@ -33,7 +33,7 @@ export default async function ComponentPage({
     if (isSupabaseConfigured) {
       const { data: compData } = await supabase
         .from("components")
-        .select("*")
+        .select("*, sources (name, slug, icon_url)")
         .eq("id", id)
         .single();
 

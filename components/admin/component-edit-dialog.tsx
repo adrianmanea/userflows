@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FilterSelector } from "./filter-selector";
 import { updateComponent } from "@/utils/actions";
@@ -37,8 +44,20 @@ export function ComponentEditDialog({
     useState<string[]>(currentFilters);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [htmlFile, setHtmlFile] = useState<File | null>(null);
+  const [sources, setSources] = useState<any[]>([]);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>(
+    component.source_id || ""
+  );
   const [isUploading, setIsUploading] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    const fetchSources = async () => {
+      const { data } = await supabase.from("sources").select("*").order("name");
+      if (data) setSources(data);
+    };
+    fetchSources();
+  }, []);
 
   const handleSave = async () => {
     startTransition(async () => {
@@ -103,6 +122,11 @@ export function ComponentEditDialog({
           description,
           thumbnail_url: thumbnailUrl,
           preview_url: previewUrl,
+          source_id:
+            selectedSourceId && selectedSourceId !== "none"
+              ? selectedSourceId
+              : null,
+          original_app: null, // Clear legacy field
         });
 
         // Update filters
@@ -213,7 +237,27 @@ export function ComponentEditDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label>Component Source</Label>
+            <Label>Attribution Source</Label>
+            <Select
+              value={selectedSourceId}
+              onValueChange={setSelectedSourceId}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a source..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {sources.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Content Source</Label>
 
             <div className="space-y-4 pt-2">
               <div className="grid gap-2 p-3 border border-border rounded-lg bg-muted/20">

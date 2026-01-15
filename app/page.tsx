@@ -4,6 +4,7 @@ import { Header } from "@/components/ui/header";
 import { Suspense } from "react";
 import { HeroHeader } from "@/components/dashboard/hero-header";
 import { HorizontalComponentList } from "@/components/dashboard/horizontal-component-list";
+import { DisclaimerFooter } from "@/components/ui/disclaimer-footer";
 
 // ... inside Home ...
 export default async function Home(props: {
@@ -36,7 +37,7 @@ export default async function Home(props: {
   try {
     const { data } = await supabase
       .from("components")
-      .select("*")
+      .select("*, sources(name, slug)")
       .order("created_at", { ascending: false });
 
     if (data) components = data;
@@ -59,7 +60,7 @@ export default async function Home(props: {
             className="bg-transparent border-b border-border/50 backdrop-blur-none"
             breadcrumbs={breadcrumbs}
           />
-          <main className="flex-1 overflow-y-auto p-8 scrollbar-thin">
+          <main className="flex-1 overflow-y-auto p-8 scrollbar-thin flex flex-col">
             {/* Hero Section */}
             <HeroHeader />
 
@@ -89,6 +90,7 @@ export default async function Home(props: {
             </div>
 
             {/* DataGrid removed as per user request to delete 'latest' section */}
+            <DisclaimerFooter className="mt-auto" />
           </main>
         </div>
       </div>

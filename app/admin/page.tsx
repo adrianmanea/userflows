@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { FilterSelector } from "@/components/admin/filter-selector";
@@ -11,7 +12,9 @@ export default function AdminClientPage() {
   const supabase = createClient();
   const [name, setName] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  const [originalApp, setOriginalApp] = useState("");
+  // const [originalApp, setOriginalApp] = useState(""); // Removed
+  const [sources, setSources] = useState<any[]>([]);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>("");
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
   // Additional Variants State
@@ -22,6 +25,14 @@ export default function AdminClientPage() {
     content: string; // URL or Code string
     file: File | null;
   }
+
+  useEffect(() => {
+    const fetchSources = async () => {
+      const { data } = await supabase.from("sources").select("*").order("name");
+      if (data) setSources(data);
+    };
+    fetchSources();
+  }, []);
 
   const [variants, setVariants] = useState<Variant[]>([]);
 
@@ -161,7 +172,8 @@ export default function AdminClientPage() {
           // id is auto-increment bigint, don't set it manually
           name,
           code_string: null, // Will be updated later or ignored
-          original_app: originalApp || null,
+          // original_app: originalApp || null, // Deprecated
+          source_id: selectedSourceId || null,
           tags: [],
           preview_url: previewUrl,
           thumbnail_url: thumbnailUrl,
@@ -266,7 +278,7 @@ export default function AdminClientPage() {
       // Reset
       setName("");
       setSelectedFilters([]);
-      setOriginalApp("");
+      setSelectedSourceId("");
       setFile(null);
       setThumbnailFile(null);
       setVariants([]); // Reset variants
@@ -306,16 +318,21 @@ export default function AdminClientPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">
-              Original App{" "}
-              <span className="text-muted-foreground/70">(Optional)</span>
+              Source App{" "}
+              <span className="text-muted-foreground/70">(Recommended)</span>
             </label>
-            <input
-              type="text"
-              value={originalApp}
-              onChange={(e) => setOriginalApp(e.target.value)}
-              className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
-              placeholder="e.g. Uber"
-            />
+            <select
+              value={selectedSourceId}
+              onChange={(e) => setSelectedSourceId(e.target.value)}
+              className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
+            >
+              <option value="">Select a source...</option>
+              {sources.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="md:col-span-2 space-y-2">

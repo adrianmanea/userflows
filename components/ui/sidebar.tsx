@@ -11,7 +11,11 @@ import {
   Smartphone,
   Component,
   GitBranch,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,6 +39,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [filters, setFilters] = useState<FilterDefinition[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -260,18 +272,54 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       </div>
 
       <div className="border-t border-sidebar-border p-4 m-4">
-        {/* User / Settings Footer (Optional) */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={() => setIsLoginOpen(true)}
-            className="text-xs text-muted-foreground hover:text-foreground px-0 h-auto hover:bg-transparent cursor-pointer"
-          >
-            Sign In / Sign Up
-          </Button>
-        </div>
+        {mounted ? (
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              Theme
+            </span>
+            <div className="flex items-center bg-sidebar-accent/50 rounded-lg p-0.5 border border-sidebar-border/50">
+              <button
+                onClick={() => setTheme("light")}
+                className={cn(
+                  "p-1.5 rounded-md transition-all",
+                  theme === "light"
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                )}
+                title="Light"
+              >
+                <Sun className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setTheme("dark")}
+                className={cn(
+                  "p-1.5 rounded-md transition-all",
+                  theme === "dark"
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                )}
+                title="Dark"
+              >
+                <Moon className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setTheme("system")}
+                className={cn(
+                  "p-1.5 rounded-md transition-all",
+                  theme === "system"
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                )}
+                title="System"
+              >
+                <Monitor className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="h-8 bg-muted/50 rounded animate-pulse" />
+        )}
       </div>
-
       <LoginDialog isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </aside>
   );

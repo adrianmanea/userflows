@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { X, ExternalLink, User } from "lucide-react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Avatar } from "@/components/ui/avatar";
+import { getGradient } from "@/utils/get-gradient";
 import {
   Select,
   SelectContent,
@@ -88,16 +90,71 @@ export function ComponentDialog({
         {/* Header */}
         <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-background flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <User className="h-4 w-4" />
-            </div>
+            {component.sources?.slug ? (
+              <Link
+                href={`/source/${component.sources.slug}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose(); // Close dialog when navigating to source
+                }}
+                className="shrink-0"
+              >
+                <Avatar className="h-8 w-8 border border-border hover:opacity-80 transition-opacity">
+                  <div
+                    className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
+                    style={{
+                      backgroundImage: getGradient(
+                        component.sources?.name || component.name || "Component"
+                      ),
+                    }}
+                  >
+                    {(
+                      component.sources?.name?.[0] ||
+                      component.name?.[0] ||
+                      "C"
+                    ).toUpperCase()}
+                  </div>
+                </Avatar>
+              </Link>
+            ) : (
+              <Avatar className="h-8 w-8 border border-border">
+                <div
+                  className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
+                  style={{
+                    backgroundImage: getGradient(
+                      component.sources?.name || component.name || "Component"
+                    ),
+                  }}
+                >
+                  {(
+                    component.sources?.name?.[0] ||
+                    component.name?.[0] ||
+                    "C"
+                  ).toUpperCase()}
+                </div>
+              </Avatar>
+            )}
+
             <div className="flex flex-col min-w-0">
               <h3 className="text-sm font-medium text-foreground truncate">
                 {component.name}
               </h3>
-              <span className="text-xs text-muted-foreground truncate">
-                {component.original_app || "Unknown Source"}
-              </span>
+              {component.sources?.slug ? (
+                <Link
+                  href={`/source/${component.sources.slug}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                  className="text-xs text-muted-foreground truncate hover:text-foreground hover:underline transition-colors w-fit"
+                >
+                  {component.sources.name}
+                </Link>
+              ) : (
+                <span className="text-xs text-muted-foreground truncate">
+                  {component.original_app || "Pro Concept"}
+                </span>
+              )}
             </div>
 
             {/* Variant Selector */}

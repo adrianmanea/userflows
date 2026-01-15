@@ -4,7 +4,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Monitor, Smartphone, Tablet } from "lucide-react";
+import { ArrowLeft, Monitor, Smartphone, Tablet, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Avatar } from "@/components/ui/avatar";
+import { getGradient } from "@/utils/get-gradient";
 import { cn } from "@/utils/cn";
 import { PreviewFrame } from "@/components/renderer/PreviewFrame";
 import { Button } from "@/components/ui/button";
@@ -50,9 +59,33 @@ export function PreviewClient({ component, variants }: PreviewClientProps) {
               {component.name}
             </h1>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground mt-0.5">
-                Preview Mode
-              </span>
+              {component.sources ? (
+                <Link
+                  href={`/source/${component.sources.slug}`}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  title="View all patterns from this source"
+                >
+                  <Avatar className="h-6 w-6 border border-border/50">
+                    <div
+                      className="h-full w-full flex items-center justify-center text-white text-[9px] font-bold"
+                      style={{
+                        backgroundImage: getGradient(
+                          component.sources.name || component.name
+                        ),
+                      }}
+                    >
+                      {component.sources.name[0]?.toUpperCase()}
+                    </div>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Source: {component.sources.name}
+                  </span>
+                </Link>
+              ) : (
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  Preview Mode
+                </span>
+              )}
               {variants.length > 1 && (
                 <Select
                   value={selectedVariant.id}
@@ -76,45 +109,78 @@ export function PreviewClient({ component, variants }: PreviewClientProps) {
             </div>
           </div>
         </div>
-        <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/50">
-          <button
-            onClick={() => setDevice("desktop")}
-            className={cn(
-              "p-1.5 rounded-md transition-all",
-              device === "desktop"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-            title="Desktop"
-          >
-            <Monitor className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setDevice("tablet")}
-            className={cn(
-              "p-1.5 rounded-md transition-all",
-              device === "tablet"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-            title="Tablet (768px)"
-          >
-            <Tablet className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setDevice("mobile")}
-            className={cn(
-              "p-1.5 rounded-md transition-all",
-              device === "mobile"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-            title="Mobile (375px)"
-          >
-            <Smartphone className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          {/* Device Toggles */}
+          <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/50">
+            <button
+              onClick={() => setDevice("desktop")}
+              className={cn(
+                "p-1.5 rounded-md transition-all",
+                device === "desktop"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+              title="Desktop"
+            >
+              <Monitor className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setDevice("tablet")}
+              className={cn(
+                "p-1.5 rounded-md transition-all",
+                device === "tablet"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+              title="Tablet (768px)"
+            >
+              <Tablet className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setDevice("mobile")}
+              className={cn(
+                "p-1.5 rounded-md transition-all",
+                device === "mobile"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+              title="Mobile (375px)"
+            >
+              <Smartphone className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* About/Disclaimer */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <Info className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>About PageInspo</DialogTitle>
+              </DialogHeader>
+              <div className="text-sm text-muted-foreground space-y-4">
+                <p>
+                  PageInspo is an educational library of UI patterns. All
+                  trademarks and brand names are the property of their
+                  respective owners and used here for descriptive purposes only.
+                </p>
+                <p>
+                  The code provided is a clean-room reconstruction for
+                  educational and transformative use.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
-        <div className="w-20" /> {/* Spacer for balance */}
+
+        {/* Spacer removed as we have right-side content now */}
       </header>
 
       {/* Main Preview Area */}

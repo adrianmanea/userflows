@@ -23,9 +23,8 @@ export function HeroHeader({ className }: { className?: string }) {
         record time.
       </p>
       <div className="mt-4">
-        <Button className="rounded-full h-10 px-6 font-semibold bg-foreground text-background hover:bg-foreground/90">
-          Build with Proven Patterns
-        </Button>
+        {/* Add Newsletter Signup Here */}
+        {/* TODO */}
       </div>
     </div>
   );

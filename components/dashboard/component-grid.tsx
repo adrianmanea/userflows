@@ -56,13 +56,11 @@ export function ComponentGrid({
 
             if (isFlow) {
               return (
-                <Link
+                <ComponentCard
                   key={`flow-${item.id}`}
+                  item={item}
                   href={`/flow/${item.id}`}
-                  className="block"
-                >
-                  <ComponentCard item={item} />
-                </Link>
+                />
               );
             }
 

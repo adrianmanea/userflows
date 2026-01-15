@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function updateComponent(id: number, data: { name: string; description: string; code?: string; thumbnail_url?: string | null; preview_url?: string | null }) {
+export async function updateComponent(id: number, data: { name: string; description: string; code?: string; thumbnail_url?: string | null; preview_url?: string | null; source_id?: string | null; original_app?: string | null; }) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("components")

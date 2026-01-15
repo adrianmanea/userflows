@@ -49,9 +49,12 @@ export function HorizontalComponentList({
 
             if (isFlow) {
               return (
-                <Link key={item.id} href={`/flow/${item.id}`}>
-                  <ComponentCard item={item} className="w-[320px]" />
-                </Link>
+                <ComponentCard
+                  key={item.id}
+                  item={item}
+                  className="w-[320px]"
+                  href={`/flow/${item.id}`}
+                />
               );
             }
 

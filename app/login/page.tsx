@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Loader2, Play } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
@@ -18,6 +30,8 @@ export default function LoginPage() {
   } | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/admin";
   const supabase = createClient();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -43,7 +57,7 @@ export default function LoginPage() {
         });
         if (error) throw error;
         router.refresh();
-        router.push("/");
+        router.push(next);
       }
     } catch (e: any) {
       setMessage({ text: e.message, type: "error" });
@@ -53,58 +67,49 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden font-sans">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-3xl opacity-50" />
-        <div className="absolute top-[30%] -right-[10%] w-[40%] h-[40%] bg-purple-500/5 rounded-full blur-3xl opacity-50" />
-      </div>
+    <div className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-muted/30">
+      <Link href="/" className="mb-8">
+        <Image src="/logo.svg" alt="Logo" width={116} height={24} />
+      </Link>
 
-      <div className="w-full max-w-sm relative z-10">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to Dashboard
-        </Link>
-
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl w-full max-w-sm relative z-10 backdrop-blur-xl">
-          <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-primary text-primary-foreground mb-4">
-            <div className="text-sm font-bold">21</div>
-          </div>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">
+      <div className="w-full max-w-sm bg-background border border-border rounded-xl p-8 shadow-sm">
+        <div className="text-center mb-8">
+          <h1 className="text-xl font-semibold tracking-tight">
             {isSignUp ? "Create an account" : "Welcome back"}
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
             {isSignUp
               ? "Enter your email to create your account"
-              : "Enter your email to sign in to your account"}
+              : "Enter your email to sign in to your dashboard"}
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-4">
-            <div>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
                 placeholder="name@example.com"
+                className="bg-muted/50"
               />
             </div>
 
-            <div>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
                 type="password"
                 required
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-10 px-3 bg-muted/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-all"
                 placeholder="••••••••"
+                className="bg-muted/50"
               />
             </div>
           </div>
@@ -122,11 +127,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-10 flex items-center justify-center bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isSignUp ? (
@@ -134,18 +135,19 @@ export default function LoginPage() {
             ) : (
               "Sign In"
             )}
-          </button>
+          </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center pt-6 border-t border-border">
           <p className="text-xs text-muted-foreground">
             {isSignUp ? "Already have an account? " : "Don't have an account? "}
             <button
+              type="button"
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setMessage(null);
               }}
-              className="text-foreground font-medium hover:text-foreground/80 underline-offset-4 hover:underline transition-colors"
+              className="text-foreground font-medium hover:text-foreground/80 underline-offset-4 hover:underline transition-colors focus:outline-none"
             >
               {isSignUp ? "Sign In" : "Sign Up"}
             </button>

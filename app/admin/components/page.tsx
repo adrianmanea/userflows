@@ -7,7 +7,7 @@ export default async function AdminComponentsPage() {
   // Fetch components
   const { data: components } = await supabase
     .from("components")
-    .select("*")
+    .select("*, sources(name, slug)")
     .order("created_at", { ascending: false });
 
   // Fetch filters
