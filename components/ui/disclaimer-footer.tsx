@@ -10,6 +10,17 @@ export function DisclaimerFooter({ className }: { className?: string }) {
           for descriptive purposes only. The code provided is a clean-room
           reconstruction for educational and transformative use.
         </p>
+        <div className="flex gap-4 pt-2">
+          <a href="/privacy" className="hover:text-foreground hover:underline">
+            Privacy Policy
+          </a>
+          <a href="/terms" className="hover:text-foreground hover:underline">
+            Terms of Service
+          </a>
+          <span className="ml-auto">
+            © {new Date().getFullYear()} PageInspo
+          </span>
+        </div>
       </div>
     </footer>
   );

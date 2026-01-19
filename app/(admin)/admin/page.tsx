@@ -55,7 +55,7 @@ export default function AdminClientPage() {
 
   const updateVariant = (id: string, field: keyof Variant, value: any) => {
     setVariants(
-      variants.map((v) => (v.id === id ? { ...v, [field]: value } : v))
+      variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
     );
   };
 
@@ -149,7 +149,7 @@ export default function AdminClientPage() {
 
             if (uploadError)
               throw new Error(
-                `Upload failed for variant ${variant.name}: ${uploadError.message}`
+                `Upload failed for variant ${variant.name}: ${uploadError.message}`,
               );
 
             const { data } = supabase.storage
@@ -162,7 +162,7 @@ export default function AdminClientPage() {
             ...variant,
             finalContent: content,
           };
-        })
+        }),
       );
 
       // 3. Save Metadata to DB
@@ -187,70 +187,15 @@ export default function AdminClientPage() {
       // 4. Save Variants to DB
       if (processedVariants.length > 0) {
         const variantInserts = processedVariants.map((v) => ({
-          component_id: componentData.id, // Use the returned bigint ID
-          variant_name: v.name, // Matches schema: variant_name text
-          variant_type: v.type, // Matches schema: variant_type text (or check migration)
-          content: v.finalContent, // Matches schema: content text
-          is_default: false,
-        }));
-
-        // Check schema/types: 20260114... migration says:
-        // name text not null, code_string text, preview_url text
-        // My previous code used: variant_name, variant_type, content.
-        // I need to align with the MIGRATION SCHEMA I just read.
-        // Migration: name, code_string, preview_url.
-        // Wait, my previous `variantInserts` used keys like `variant_name`.
-        // The MIGRATION (Step 681) has: name, code_string, preview_url.
-        // It DOES NOT have variant_type? Or maybe I missed it?
-        // Let me re-read the migration content in Step 681.
-        // "name text not null"
-        // "code_string text"
-        // "preview_url text"
-        // "is_default boolean"
-        // It DOES NOT have `variant_type` or `content`.
-        // I must align the keys to the actual DB schema.
-
-        const mappedInserts = processedVariants.map((v) => ({
           component_id: componentData.id,
           name: v.name,
-          // Where do we store type? Schema doesn't look like it has type?
-          // File 681:
-          //   id, component_id, name, code_string, preview_url, is_default.
-          // It seems the schema doesn't support 'type' column?
-          // Or maybe I should map 'content' (url) to 'preview_url'? And maybe code string?
-          // If 'type' is missing, I should probably put the type in the name or description?
-          // OR, I should double check if I missed a migration.
-          // But based on 681, there is no `variant_type`.
-          // For now, I will map:
-          //   name -> v.name
-          //   preview_url -> v.finalContent (if url/file)
-          //   code_string -> ? (maybe empty for now)
-          //   But wait, 'type' distinction is important (HTML vs URL).
-          //   Maybe I store type in metadata or name?
-          //   Let's check if there is a 'type' column in previous steps?
-          //   The user code in Step 665 had:
-          //     variant_name: v.name,
-          //     variant_type: v.type,
-          //     content: v.finalContent,
-          //   This implies the user EXPECTED these columns.
-          //   But migration 20260114 (Step 681) DEFINITELY does not have 'variant_type' or 'content'.
-          //   It has `name`, `code_string`, `preview_url`.
-          //   This is a mismatch.
-          //   However, if I use `preview_url` for the content, that works for URL/File.
-          //   I'll map `finalContent` -> `preview_url`.
-          //   I'll map `v.name` -> `name`.
-          //   I'll ignore `type` for now, or maybe the `type` column exists and I missed it?
-          //   No, I read the file in 681.
-          //   I'll proceed with fitting the data into the existing schema:
-          //   preview_url = v.finalContent
-          //   name = v.name
           preview_url: v.finalContent,
           is_default: false,
         }));
 
         const { error: variantsError } = await supabase
           .from("component_variants")
-          .insert(mappedInserts);
+          .insert(variantInserts);
 
         if (variantsError) throw variantsError;
       }
@@ -382,7 +327,7 @@ export default function AdminClientPage() {
                   "h-8 text-xs font-medium transition-all",
                   publishMode === mode
                     ? "bg-muted text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {mode === "upload" && "Upload File"}
@@ -527,7 +472,7 @@ export default function AdminClientPage() {
                           updateVariant(
                             variant.id,
                             "file",
-                            e.target.files?.[0] || null
+                            e.target.files?.[0] || null,
                           )
                         }
                         className="w-full text-xs text-muted-foreground file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-secondary file:text-secondary-foreground"
@@ -546,7 +491,7 @@ export default function AdminClientPage() {
               "p-3 rounded-lg text-xs leading-relaxed",
               message.type === "error"
                 ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                : "bg-green-500/10 text-green-500 border border-green-500/20"
+                : "bg-green-500/10 text-green-500 border border-green-500/20",
             )}
           >
             {message.text}

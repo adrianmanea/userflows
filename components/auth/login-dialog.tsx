@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import Image from "next/image";
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -70,10 +72,10 @@ export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <div className="flex items-center justify-center mb-4">
-            <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-primary text-primary-foreground">
-              <div className="text-sm font-bold">UF</div>
-            </div>
+          <div className="flex items-center justify-center">
+            <Link href="/">
+              <Image src="/logo-emblem.svg" alt="Logo" width={64} height={64} />
+            </Link>
           </div>
           <DialogTitle className="text-center text-xl">
             {isSignUp ? "Create an account" : "Welcome back"}
@@ -121,7 +123,7 @@ export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
                 "p-3 rounded-lg text-xs leading-relaxed",
                 message.type === "error"
                   ? "bg-destructive/10 text-destructive border border-destructive/20"
-                  : "bg-green-500/10 text-green-500 border border-green-500/20"
+                  : "bg-green-500/10 text-green-500 border border-green-500/20",
               )}
             >
               {message.text}

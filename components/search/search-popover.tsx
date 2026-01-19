@@ -104,7 +104,7 @@ export function SearchPopover({ open, onOpenChange }: SearchPopoverProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl w-full h-[85vh] max-h-[720px] p-0 gap-0 overflow-hidden bg-background backdrop-blur-md border-border shadow-2xl rounded-3xl flex flex-col [&>button]:hidden">
+      <DialogContent className="sm:max-w-4xl w-full h-[85vh] max-h-[720px] p-0 gap-0 overflow-hidden bg-background/90 backdrop-blur-xl border-border shadow-2xl rounded-3xl flex flex-col [&>button]:hidden">
         <DialogTitle className="sr-only">Search</DialogTitle>
         <DialogDescription className="sr-only">
           Search for components, screens, flows and more.
@@ -169,7 +169,7 @@ export function SearchPopover({ open, onOpenChange }: SearchPopoverProps) {
           </aside>
 
           {/* Results List */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="space-y-6">
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">

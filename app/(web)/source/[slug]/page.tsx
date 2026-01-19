@@ -1,6 +1,7 @@
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { ComponentCard } from "@/components/web/component-card";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 // Dynamic to ensure fresh data
 export const dynamic = "force-dynamic";
@@ -12,9 +13,11 @@ export default async function SourcePage({
 }) {
   const { slug } = await params;
 
-  if (!isSupabaseConfigured) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return <div>Supabase not configured</div>;
   }
+
+  const supabase = await createClient();
 
   // Fetch Source Info
   const { data: source, error: sourceError } = await supabase
@@ -53,14 +56,14 @@ export default async function SourcePage({
           <p className="text-muted-foreground mt-2 max-w-xl">
             Browse UI patterns and flows inspired by {source.name}.
             {source.url && (
-              <a
+              <Link
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 text-primary hover:underline text-sm"
               >
                 Visit Original App &rarr;
-              </a>
+              </Link>
             )}
           </p>
         </div>

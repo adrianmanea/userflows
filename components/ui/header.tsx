@@ -11,6 +11,13 @@ import { LoginDialog } from "@/components/auth/login-dialog";
 import { SearchPopover } from "@/components/search/search-popover";
 import { getGradient } from "@/utils/get-gradient";
 import { Avatar } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Sidebar } from "@/components/ui/sidebar";
 
 interface HeaderProps {
   className?: string;
@@ -59,16 +66,24 @@ export function Header({ className, breadcrumbs }: HeaderProps) {
     <header
       className={cn(
         "flex h-14 items-center gap-4 border-b border-border px-4",
-        className
+        className,
       )}
     >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden text-muted-foreground hover:text-foreground"
-      >
-        <PanelLeft className="h-5 w-5" />
-      </Button>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden text-muted-foreground hover:text-foreground"
+          >
+            <PanelLeft className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-[280px]">
+          <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
+          <Sidebar className="flex w-full h-full border-r-0" />
+        </SheetContent>
+      </Sheet>
 
       <div className="flex flex-1 items-center gap-4">
         {/* Breadcrumbs (Desktop) */}
@@ -83,7 +98,7 @@ export function Header({ className, breadcrumbs }: HeaderProps) {
                 <span
                   className={cn(
                     "text-foreground",
-                    crumb.href ? "hover:text-foreground/80" : ""
+                    crumb.href ? "hover:text-foreground/80" : "",
                   )}
                 >
                   {crumb.href ? (

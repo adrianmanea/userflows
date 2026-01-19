@@ -10,6 +10,7 @@ export function AdminNav() {
   const tabs = [
     { name: "Publish New", href: "/admin" },
     { name: "All Components", href: "/admin/components" },
+    { name: "Sources", href: "/admin/sources" },
   ];
 
   return (
@@ -24,7 +25,7 @@ export function AdminNav() {
               "border-b-2 py-3 text-sm font-medium transition-colors",
               isActive
                 ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             {tab.name}

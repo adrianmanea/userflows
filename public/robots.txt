@@ -1,0 +1,14 @@
+# PageInspo Robots.txt
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Disallow admin/private routes
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/*
+Disallow: /login
+
+# Sitemap location
+Sitemap: https://pageinspo.com/sitemap.xml

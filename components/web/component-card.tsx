@@ -43,7 +43,7 @@ export function ComponentCard({
             onClick={(e) => e.stopPropagation()}
             className="shrink-0"
           >
-            <Avatar className="h-8 w-8 border border-border hover:opacity-80 transition-opacity">
+            <Avatar className="h-8 w-8 hover:opacity-80 transition-opacity">
               <div
                 className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
                 style={{
@@ -61,7 +61,7 @@ export function ComponentCard({
             </Avatar>
           </Link>
         ) : (
-          <Avatar className="h-8 w-8 border border-border">
+          <Avatar className="h-8 w-8">
             <div
               className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
               style={{
@@ -106,7 +106,7 @@ export function ComponentCard({
       </div>
 
       {/* Thumbnail Card */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-muted">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted">
         {item.thumbnail_url ? (
           item.thumbnail_url.endsWith(".mp4") ? (
             <video

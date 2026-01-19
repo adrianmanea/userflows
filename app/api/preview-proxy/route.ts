@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": contentType,
         // Crucial: Open up CSP constraints
-        "Content-Security-Policy": "frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com blob: data:;",
+        "Content-Security-Policy": "frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com blob: data:; object-src 'none'; base-uri 'self';",
         "X-Frame-Options": "SAMEORIGIN",
         // Cache control to improve performance
         "Cache-Control": "public, max-age=3600",
