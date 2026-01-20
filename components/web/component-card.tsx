@@ -19,6 +19,7 @@ interface ComponentCardProps {
   className?: string;
   onClick?: () => void;
   href?: string;
+  hideSource?: boolean;
 }
 
 export function ComponentCard({
@@ -26,6 +27,7 @@ export function ComponentCard({
   className,
   onClick,
   href,
+  hideSource,
 }: ComponentCardProps) {
   return (
     <div
@@ -67,12 +69,31 @@ export function ComponentCard({
 
       {/* Metadata - Below Card */}
       <div className="flex items-start gap-3 px-1">
-        {item.sources?.slug ? (
-          <Link
-            href={`/source/${item.sources.slug}`}
-            onClick={(e) => e.stopPropagation()}
-            className="shrink-0"
-          >
+        {!hideSource &&
+          (item.sources?.slug ? (
+            <Link
+              href={`/source/${item.sources.slug}`}
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0"
+            >
+              <Avatar className="h-10 w-10 border border-border/50">
+                <div
+                  className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
+                  style={{
+                    backgroundImage: getGradient(
+                      item.sources?.name || item.name || "Component",
+                    ),
+                  }}
+                >
+                  {(
+                    item.sources?.name?.[0] ||
+                    item.name?.[0] ||
+                    "C"
+                  ).toUpperCase()}
+                </div>
+              </Avatar>
+            </Link>
+          ) : (
             <Avatar className="h-10 w-10 border border-border/50">
               <div
                 className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
@@ -89,39 +110,31 @@ export function ComponentCard({
                 ).toUpperCase()}
               </div>
             </Avatar>
-          </Link>
-        ) : (
-          <Avatar className="h-10 w-10 border border-border/50">
-            <div
-              className="h-full w-full flex items-center justify-center text-white text-[10px] font-bold"
-              style={{
-                backgroundImage: getGradient(
-                  item.sources?.name || item.name || "Component",
-                ),
-              }}
-            >
-              {(item.sources?.name?.[0] || item.name?.[0] || "C").toUpperCase()}
-            </div>
-          </Avatar>
-        )}
+          ))}
 
-        <div className="flex flex-col min-w-0 gap-0.5">
+        <div className="flex flex-col min-w-0 gap-0.5 pt-0.5">
           <div className="flex items-center gap-2 w-full">
-            {item.sources?.slug ? (
-              <Link
-                href={`/source/${item.sources.slug}`}
-                onClick={(e) => e.stopPropagation()}
-                className="text-sm font-semibold text-foreground truncate hover:underline hover:text-primary transition-colors"
-              >
-                {item.sources.name}
-              </Link>
-            ) : (
-              <span className="text-sm font-semibold text-foreground truncate">
-                {item.sources?.name || "Unknown Source"}
-              </span>
-            )}
+            {!hideSource &&
+              (item.sources?.slug ? (
+                <Link
+                  href={`/source/${item.sources.slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm font-semibold text-foreground truncate hover:underline hover:text-primary transition-colors"
+                >
+                  {item.sources.name}
+                </Link>
+              ) : (
+                <span className="text-sm font-semibold text-foreground truncate">
+                  {item.sources?.name || "Unknown Source"}
+                </span>
+              ))}
           </div>
-          <span className="text-sm text-muted-foreground truncate w-full line-clamp-1">
+          <span
+            className={cn(
+              "text-sm text-muted-foreground truncate w-full line-clamp-1",
+              hideSource && "text-foreground font-medium",
+            )}
+          >
             {item.name}
           </span>
         </div>

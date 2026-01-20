@@ -10,10 +10,12 @@ export function ComponentGrid({
   items,
   title = "Newest",
   viewAllLink,
+  hideSource,
 }: {
   items: any[];
   title?: string;
   viewAllLink?: string;
+  hideSource?: boolean;
 }) {
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
 
@@ -91,6 +93,7 @@ export function ComponentGrid({
                 key={item.id}
                 item={item}
                 href={`/flow/${item.id}`}
+                hideSource={hideSource}
               />
             );
           }
@@ -100,6 +103,7 @@ export function ComponentGrid({
               key={item.id}
               item={item}
               onClick={() => setSelectedComponent(item)}
+              hideSource={hideSource}
             />
           );
         })}

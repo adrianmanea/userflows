@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { ComponentGrid } from "@/components/web/component-grid";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Avatar } from "@/components/ui/avatar";
+import { getGradient } from "@/utils/get-gradient";
 
 // Dynamic to ensure fresh data
 export const dynamic = "force-dynamic";
@@ -46,9 +48,16 @@ export default async function SourcePage({
     <>
       {/* Source Header */}
       <div className="flex items-center gap-6 mb-12">
-        <div className="w-20 h-20 rounded-2xl bg-muted border border-border flex items-center justify-center text-4xl font-bold text-muted-foreground">
-          {source.name[0]?.toUpperCase()}
-        </div>
+        <Avatar className="w-20 h-20 rounded-2xl border border-border">
+          <div
+            className="h-full w-full flex items-center justify-center text-white text-3xl font-bold"
+            style={{
+              backgroundImage: getGradient(source.name),
+            }}
+          >
+            {source.name[0]?.toUpperCase()}
+          </div>
+        </Avatar>
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             {source.name}
@@ -81,7 +90,7 @@ export default async function SourcePage({
           </h2>
         </div>
 
-        <ComponentGrid items={components || []} />
+        <ComponentGrid items={components || []} hideSource={true} />
       </section>
     </>
   );
