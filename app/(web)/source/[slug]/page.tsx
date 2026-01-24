@@ -1,4 +1,3 @@
-import { createClient } from "@/utils/supabase/server";
 import { ComponentGrid } from "@/components/web/component-grid";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +7,7 @@ import { getPublicSource, getPublicSourceComponents } from "@/utils/queries";
 
 // Dynamic to ensure fresh data
 export const dynamic = "force-dynamic";
-
+  
 export default async function SourcePage({
   params,
 }: {

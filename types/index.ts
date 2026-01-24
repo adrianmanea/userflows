@@ -14,7 +14,6 @@ export interface Source {
   icon_url?: string;
   url?: string;
   created_at: string;
-  status: ContentStatus;
 }
 
 export interface Component {
